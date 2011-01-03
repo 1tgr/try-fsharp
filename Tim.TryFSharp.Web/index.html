@@ -8,6 +8,7 @@
         function init() {
             function commandHandle(code) {
                 $.post("exec.ashx", { code: code });
+                return true;
             }
 
             var console = $("#console").console({
@@ -21,12 +22,16 @@
                 $.post("exec.ashx", { code: code });
             }
 
+            function onAjaxError() {
+                console.commandResult("ajax error", "jquery-console-message-error");
+            }
+
             var since = 1;
             function onData(data) {
-                if (data.text)
+                if (data.since != since) {
                     console.commandResult(data.text, "jquery-console-message-success");
-
-                since = data.since;
+                    since = data.since;
+                }
             }
 
             function onTimer() {
@@ -35,6 +40,7 @@
             }
 
             $("#send").click(onSend);
+            $(document).ajaxError(onAjaxError);
             onTimer();
         }
 
