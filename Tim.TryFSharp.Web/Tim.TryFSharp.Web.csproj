@@ -32,6 +32,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\lib\json\7\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -48,7 +51,7 @@
   <ItemGroup>
     <Content Include="Global.asax" />
     <Content Include="index.html" />
-    <Content Include="index.js" />
+    <Content Include="jquery.console.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
       <DependentUpon>Web.config</DependentUpon>
@@ -59,6 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ConsoleHandler.cs" />
+    <Compile Include="ConsoleBuffer.cs" />
     <Compile Include="ExecHandler.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
