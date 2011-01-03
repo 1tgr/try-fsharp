@@ -50,8 +50,8 @@ namespace Tim.TryFSharp.Web
                     SafeFileHandle handle = (SafeFileHandle) context.Application["job"];
                     AssignProcessToJobObject(handle.DangerousGetHandle(), process.Handle);
 
-                    StringBuilder buffer = new StringBuilder();
-                    DataReceivedEventHandler handler = (_, e) => { buffer.AppendLine(e.Data); };
+                    ConsoleBuffer buffer = new ConsoleBuffer();
+                    DataReceivedEventHandler handler = (_, e) => { buffer.AppendLine(e.Data);  };
                     process.ErrorDataReceived += handler;
                     process.OutputDataReceived += handler;
                     process.BeginErrorReadLine();

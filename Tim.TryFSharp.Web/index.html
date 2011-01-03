@@ -3,11 +3,45 @@
 <head>
     <title>Try F#</title>
     <script language="javascript" type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4.4/jquery.min.js"></script>
-    <script language="javascript" type="text/javascript" src="index.js"></script>
+    <script language="javascript" type="text/javascript" src="jquery.console.js"></script>
+    <script language="javascript" type="text/javascript">
+        function init() {
+            var console = $("#console").console({ welcomeMessage: "" });
+
+            var onSend = function () {
+                var code = $("#code").val();
+                console.commandResult(code, "jquery-console-message-success");
+                $.post("exec.ashx", { code: code });
+            }
+
+            $("#send").click(onSend);
+
+            var since = 1;
+            var onData = function (data) {
+                if (data.text)
+                    console.commandResult(data.text, "jquery-console-message-success");
+
+                since = data.since;
+            }
+
+            var onTimer = function () {
+                setTimeout(onTimer, 1000);
+                $.getJSON("console.ashx", { since: since }, onData);
+            }
+
+            onTimer();
+        }
+
+        $(document).ready(init);
+    </script>
+    <link rel="stylesheet" type="text/css" media="screen" href="styles.css" />
 </head>
 <body>
-<p><textarea id="code" cols="40" rows="25"></textarea></p>
-<p><input id="send" type="button" value="Send"/></p>
-<pre id="console"></pre>
+    <p>
+        <textarea id="code" cols="40" rows="25"></textarea></p>
+    <p>
+        <input id="send" type="button" value="Send" /></p>
+    <div id="console">
+    </div>
 </body>
 </html>

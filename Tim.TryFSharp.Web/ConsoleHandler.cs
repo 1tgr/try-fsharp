@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using System.Web;
 using System.Web.SessionState;
+using Newtonsoft.Json;
 
 namespace Tim.TryFSharp.Web
 {
@@ -14,12 +16,36 @@ namespace Tim.TryFSharp.Web
 
         public void ProcessRequest(HttpContext context)
         {
-            lock (context.Session.SyncRoot)
+            int since;
+            string text;
+            ConsoleBuffer buffer = (ConsoleBuffer)context.Session["buffer"];
+            if (buffer == null)
             {
-                StringBuilder buffer = (StringBuilder)context.Session["buffer"];
-                context.Response.ContentType = "text/plain";
-                if (buffer != null)
-                    context.Response.Write(buffer);
+                since = 1;
+                text = "";
+            }
+            else
+            {
+                string s = context.Request.QueryString["since"];
+                if (s == null || !int.TryParse(s, out since))
+                    since = 1;
+
+                since = buffer.ReadSince(since, out text);
+            }
+
+            context.Response.ContentType = "application/json";
+
+            using (JsonWriter writer = new JsonTextWriter(context.Response.Output))
+            {
+                JsonSerializer serializer = new JsonSerializer();
+
+                Dictionary<string, object> dict = new Dictionary<string, object>
+                    {
+                        { "since", since },
+                        { "text", text }
+                    };
+
+                serializer.Serialize(writer, dict);
             }
         }
     }
