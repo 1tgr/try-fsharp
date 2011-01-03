@@ -60,7 +60,7 @@ namespace Tim.TryFSharp.Web
                     context.Session.Add("buffer", buffer);
                 }
 
-                process.StandardInput.WriteLine(context.Request.Form["code"] + ";;");
+                process.StandardInput.WriteLine(context.Request.Form["code"]);
             }
         }
     }

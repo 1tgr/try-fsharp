@@ -6,42 +6,49 @@
     <script language="javascript" type="text/javascript" src="jquery.console.js"></script>
     <script language="javascript" type="text/javascript">
         function init() {
-            var console = $("#console").console({ welcomeMessage: "" });
+            function commandHandle(code) {
+                $.post("exec.ashx", { code: code });
+            }
 
-            var onSend = function () {
-                var code = $("#code").val();
+            var console = $("#console").console({
+                welcomeMessage: "",
+                commandHandle: commandHandle
+            });
+
+            function onSend() {
+                var code = $("#code").val() + ";;";
                 console.commandResult(code, "jquery-console-message-success");
                 $.post("exec.ashx", { code: code });
             }
 
-            $("#send").click(onSend);
-
             var since = 1;
-            var onData = function (data) {
+            function onData(data) {
                 if (data.text)
                     console.commandResult(data.text, "jquery-console-message-success");
 
                 since = data.since;
             }
 
-            var onTimer = function () {
+            function onTimer() {
                 setTimeout(onTimer, 1000);
                 $.getJSON("console.ashx", { since: since }, onData);
             }
 
+            $("#send").click(onSend);
             onTimer();
         }
 
         $(document).ready(init);
     </script>
+    <meta name="viewport" content="width=320; initial-scale=1.0; user-scalable=0;" />
     <link rel="stylesheet" type="text/css" media="screen" href="styles.css" />
+    <link rel="stylesheet" type="text/css" media="only screen and (max-device-width: 480px)" href="iphone.css" />
 </head>
 <body>
-    <p>
-        <textarea id="code" cols="40" rows="25"></textarea></p>
-    <p>
-        <input id="send" type="button" value="Send" /></p>
-    <div id="console">
-    </div>
+    <div>
+        <textarea id="code" class="console" cols="40" rows="25"></textarea></div>
+    <div id="toolbar">
+        <input id="send" type="button" value="Send" /></div>
+    <div id="console" class="console" />
 </body>
 </html>
