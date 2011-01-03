@@ -59,6 +59,9 @@ namespace Tim.TryFSharp.Web
                     process.OutputDataReceived += handler;
                     process.BeginErrorReadLine();
                     process.BeginOutputReadLine();
+
+                    process.StandardInput.WriteLine("open Tim.TryFSharp.Interactive\nMain.init fsi;;");
+
                     context.Session.Add("fsi", process);
                     context.Session.Add("buffer", buffer);
                 }

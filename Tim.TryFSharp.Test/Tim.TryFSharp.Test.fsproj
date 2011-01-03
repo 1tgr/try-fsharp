@@ -5,12 +5,12 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{4025d560-1047-4ebd-8bf8-4a832c8882b1}</ProjectGuid>
+    <ProjectGuid>{2c8ff113-8b5f-4b4c-9d8b-b0004d62bbc3}</ProjectGuid>
     <OutputType>Library</OutputType>
-    <RootNamespace>Tim.TryFSharp.Interactive</RootNamespace>
-    <AssemblyName>Tim.TryFSharp.Interactive</AssemblyName>
+    <RootNamespace>Tim.TryFSharp.Test</RootNamespace>
+    <AssemblyName>Tim.TryFSharp.Test</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <Name>Tim.TryFSharp.Interactive</Name>
+    <Name>Tim.TryFSharp.Test</Name>
     <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -23,6 +23,10 @@
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>
     </DocumentationFile>
+    <StartAction>Program</StartAction>
+    <StartProgram>D:\Data\Git\try-fsharp\lib\xunit\1.6.1\xunit.gui.exe</StartProgram>
+    <StartWorkingDirectory>D:\Data\Git\try-fsharp</StartWorkingDirectory>
+    <StartArguments>bin\Debug\Tim.TryFSharp.Test.dll</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -35,20 +39,23 @@
     </DocumentationFile>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="FSharp.Compiler.Interactive.Settings">
-      <HintPath>..\lib\fsharp\4.0\FSharp.Compiler.Interactive.Settings.dll</HintPath>
-    </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core" />
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>..\lib\json\7\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="xunit">
+      <HintPath>..\lib\xunit\1.6.1\xunit.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Tim.TryFSharp.Interactive\Tim.TryFSharp.Interactive.fsproj">
+      <Name>Tim.TryFSharp.Interactive</Name>
+      <Project>{4025d560-1047-4ebd-8bf8-4a832c8882b1}</Project>
+      <Private>True</Private>
+    </ProjectReference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="draw.fs" />
-    <Compile Include="main.fs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
