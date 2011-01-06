@@ -1,4 +1,16 @@
-﻿.console
+﻿p, h1
+{
+	font-family: Helvetica,Arial;
+}
+p
+{
+	font-size: 14px;
+}
+h1
+{
+	font-size: 20px;
+}
+.console
 {
 	font-size: 14px;
 }
