@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Web;
+using System.Web.Security;
 using Microsoft.Win32.SafeHandles;
 
 namespace Tim.TryFSharp.Web
@@ -29,6 +30,14 @@ namespace Tim.TryFSharp.Web
                 TerminateJobObject(handle.DangerousGetHandle(), 0);
                 handle.Close();
             }
+        }
+
+        protected void Session_Start(object sender, EventArgs e)
+        {
+            if(Response.Cookies.Count > 0)
+               foreach(string s in Response.Cookies.AllKeys)
+                  if(s == FormsAuthentication.FormsCookieName || s.ToLower().Equals("asp.net_sessionid") )
+                     Response.Cookies[s].HttpOnly = false;
         }
 
         protected void Session_End(object sender, EventArgs e)
