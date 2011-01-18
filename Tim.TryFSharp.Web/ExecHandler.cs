@@ -40,7 +40,6 @@ namespace Tim.TryFSharp.Web
                     ProcessStartInfo startInfo = new ProcessStartInfo();
                     startInfo.FileName = Path.Combine(programFiles, @"Microsoft F#\v4.0\fsi.exe");
                     startInfo.WorkingDirectory = Path.GetTempPath();
-                    startInfo.Arguments = string.Format(@"--nologo -I ""{0}\bin"" -r Tim.TryFSharp.Interactive.dll", AppDomain.CurrentDomain.BaseDirectory);
                     startInfo.RedirectStandardError = true;
                     startInfo.RedirectStandardInput = true;
                     startInfo.RedirectStandardOutput = true;
@@ -59,8 +58,6 @@ namespace Tim.TryFSharp.Web
                     process.OutputDataReceived += handler;
                     process.BeginErrorReadLine();
                     process.BeginOutputReadLine();
-
-                    process.StandardInput.WriteLine("open Tim.TryFSharp.Interactive\nMain.init fsi;;");
 
                     context.Session.Add("fsi", process);
                     context.Session.Add("buffer", buffer);

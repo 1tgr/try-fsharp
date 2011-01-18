@@ -80,12 +80,6 @@
   <ItemGroup>
     <Folder Include="App_Data\" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Tim.TryFSharp.Interactive\Tim.TryFSharp.Interactive.fsproj">
-      <Project>{4025D560-1047-4EBD-8BF8-4A832C8882B1}</Project>
-      <Name>Tim.TryFSharp.Interactive</Name>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" />
   <ProjectExtensions>
