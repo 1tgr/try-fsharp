@@ -40,7 +40,6 @@ namespace Tim.TryFSharp.Web
                     ProcessStartInfo startInfo = new ProcessStartInfo();
                     startInfo.FileName = Path.Combine(programFiles, @"Microsoft F#\v4.0\fsi.exe");
                     startInfo.WorkingDirectory = Path.GetTempPath();
-                    startInfo.Arguments = string.Format(@"--nologo -I ""{0}\bin"" -r Tim.TryFSharp.Interactive.dll", AppDomain.CurrentDomain.BaseDirectory);
                     startInfo.RedirectStandardError = true;
                     startInfo.RedirectStandardInput = true;
                     startInfo.RedirectStandardOutput = true;
@@ -53,20 +52,20 @@ namespace Tim.TryFSharp.Web
                     SafeFileHandle handle = (SafeFileHandle) context.Application["job"];
                     AssignProcessToJobObject(handle.DangerousGetHandle(), process.Handle);
 
-                    ConsoleBuffer buffer = new ConsoleBuffer();
+                    ConsoleBuffer buffer = new ConsoleBuffer(context.Session.SessionID);
                     DataReceivedEventHandler handler = (_, e) => { buffer.AppendLine(e.Data);  };
                     process.ErrorDataReceived += handler;
                     process.OutputDataReceived += handler;
                     process.BeginErrorReadLine();
                     process.BeginOutputReadLine();
 
-                    process.StandardInput.WriteLine("open Tim.TryFSharp.Interactive\nMain.init fsi;;");
-
                     context.Session.Add("fsi", process);
                     context.Session.Add("buffer", buffer);
                 }
 
-                process.StandardInput.WriteLine(context.Request.Form["code"]);
+                string code = (context.Request.Form["code"] ?? "").ToString();
+                process.StandardInput.WriteLine(code);
+                ConsoleBuffer.Log(context.Session.SessionID, "in", code);
             }
         }
     }

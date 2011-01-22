@@ -1,6 +1,7 @@
 *.orig
 *.sln.cache
 *.suo
+*.swp
 *.user
 bin/
 obj/
