@@ -24,6 +24,6 @@
       $("#profile").evently("profile", app);
       $.evently.connect("#account","#profile", ["loggedIn","loggedOut"]);
       $("#items").evently("items", app);
-    });
+    }, { db: "tryfs", design: "couchdb" });
   </script>
 </html>
