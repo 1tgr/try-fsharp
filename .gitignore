@@ -3,5 +3,6 @@
 *.suo
 *.user
 bin/
+couchdb/.couchapprc
 obj/
 
