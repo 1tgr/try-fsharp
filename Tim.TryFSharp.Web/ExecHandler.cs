@@ -52,7 +52,7 @@ namespace Tim.TryFSharp.Web
                     SafeFileHandle handle = (SafeFileHandle) context.Application["job"];
                     AssignProcessToJobObject(handle.DangerousGetHandle(), process.Handle);
 
-                    ConsoleBuffer buffer = new ConsoleBuffer();
+                    ConsoleBuffer buffer = new ConsoleBuffer(context.Session.SessionID);
                     DataReceivedEventHandler handler = (_, e) => { buffer.AppendLine(e.Data);  };
                     process.ErrorDataReceived += handler;
                     process.OutputDataReceived += handler;
@@ -63,7 +63,9 @@ namespace Tim.TryFSharp.Web
                     context.Session.Add("buffer", buffer);
                 }
 
-                process.StandardInput.WriteLine(context.Request.Form["code"]);
+                string code = (context.Request.Form["code"] ?? "").ToString();
+                process.StandardInput.WriteLine(code);
+                ConsoleBuffer.Log(context.Session.SessionID, "in", code);
             }
         }
     }
