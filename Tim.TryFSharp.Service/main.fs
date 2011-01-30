@@ -2,6 +2,7 @@
 
 open System
 open System.Diagnostics
+open System.IO
 open System.Net
 
 type Session =
@@ -9,7 +10,8 @@ type Session =
         [<JsonName("_rev")>]       Rev        : string option
         [<JsonName("owner")>]      Owner      : string
         [<JsonName("host")>]       Host       : string
-        [<JsonName("servicePid")>] ServicePid : int
+        [<JsonName("servicePid")>] ServicePid : int64
+        [<JsonName("fsiPid")>]     FsiPid     : int64 option
     }
 
 type Message =
@@ -22,9 +24,13 @@ type Message =
         [<JsonName("queueStatus")>] QueueStatus : string option
     }
 
+type Claim =
+    | OwnSession of Process
+    | OtherSession of string
+
 module Main =
     let baseUri = Uri("http://www.partario.com/couchdb/tryfs/")
-    let ownSessions : Map<string, string> ref = ref Map.empty
+    let ownSessions : Map<string, string * Process> ref = ref Map.empty
 
     let getSession (id : string) : Session option =
         try
@@ -34,29 +40,27 @@ module Main =
             | :? HttpWebResponse as response when response.StatusCode = HttpStatusCode.NotFound -> None
             | _ -> reraise ()
 
-    let putSession id : Session -> string option =
+    let putSession (id : string) : Session -> string option =
         CouchDB.conflicted (CouchDB.putDocument baseUri id)
 
     let getMessage : string -> Message =
         CouchDB.getDocument baseUri
 
-    let putMessage id : Message -> string option =
-        CouchDB.conflicted (CouchDB.putDocument baseUri id)
+    let putMessage (id : string) : Message -> string =
+        CouchDB.putDocument baseUri id
     
-    let claimSession : string -> string option =
+    let claimSession : string -> Claim =
         let ownServerId = string (Guid.NewGuid())
 
         let rec impl id =
-            if Map.containsKey id !ownSessions then
-                None
-            else
-                match getSession id with
-                | Some session when session.Owner = ownServerId ->
-                    ownSessions := Map.add id (Option.get session.Rev) !ownSessions
-                    None
+            match Map.tryFind id !ownSessions with
+            | Some (_, proc) ->
+                OwnSession proc
 
+            | None ->
+                match getSession id with
                 | Some session ->
-                    Some session.Owner
+                    OtherSession session.Owner
 
                 | None ->
                     let session : Session =
@@ -64,13 +68,33 @@ module Main =
                             Rev = None
                             Owner = ownServerId
                             Host = Dns.GetHostName()
-                            ServicePid = Process.GetCurrentProcess().Id
+                            ServicePid = int64 (Process.GetCurrentProcess().Id)
+                            FsiPid = None
                         }
 
                     match putSession id session with
                     | Some rev ->
-                        ownSessions := Map.add id rev !ownSessions
-                        None
+                        let programFiles =
+                            match Environment.GetEnvironmentVariable("ProgramFiles(x86)") with
+                            | null -> Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+                            | s -> s
+
+                        let startInfo = new ProcessStartInfo()
+                        startInfo.FileName <- Path.Combine(programFiles, @"Microsoft F#\v4.0\fsi.exe")
+                        startInfo.WorkingDirectory <- Path.GetTempPath()
+                        //startInfo.RedirectStandardError <- true
+                        startInfo.RedirectStandardInput <- true
+                        //startInfo.RedirectStandardOutput <- true
+                        startInfo.UseShellExecute <- false
+
+                        let proc = new Process()
+                        proc.StartInfo <- startInfo
+                        ignore (proc.Start())
+
+                        let session = { session with FsiPid = Some (int64 proc.Id) }
+                        ownSessions := Map.add id (rev, proc) !ownSessions
+                        ignore (putSession id session)
+                        OwnSession proc
 
                     | None ->
                         impl id
@@ -81,19 +105,15 @@ module Main =
         match getMessage id with
         | { Message.QueueStatus = None } as message ->
             match claimSession (sprintf "session-%s" message.SessionId) with
-            | Some otherServerId ->
+            | OtherSession otherServerId ->
                 fprintfn Console.Error "Ignoring %s - owned by session %s on %s" id message.SessionId otherServerId
                 None
 
-            | None ->
+            | OwnSession proc ->
                 let message = { message with QueueStatus = Some "done" }
-                match putMessage id message with
-                | Some rev ->
-                    Some { message with Rev = rev }
-
-                | None ->
-                    fprintfn Console.Error "Ignoring %s - put conflict" id
-                    None
+                let message = { message with Rev = putMessage id message }
+                proc.StandardInput.WriteLine message.Message
+                Some message
 
         | _ ->
             None
@@ -111,8 +131,11 @@ module Main =
             try
                 subscribe None
             finally
-                for id, rev in Map.toSeq !ownSessions do
+                for id, (rev, proc) in Map.toSeq !ownSessions do
+                    proc.Kill()
                     CouchDB.deleteDocument baseUri id rev
+                    proc.WaitForExit()
+                    proc.Dispose()
 
             0
         with ex ->
