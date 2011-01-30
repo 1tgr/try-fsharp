@@ -65,7 +65,6 @@ namespace Tim.TryFSharp.Web
 
                 string code = (context.Request.Form["code"] ?? "").ToString();
                 process.StandardInput.WriteLine(code);
-                ConsoleBuffer.Log(context.Session.SessionID, "in", code);
             }
         }
     }
