@@ -25,12 +25,26 @@ type ChangesResponse =
         [<JsonName("last_seq")>] LastSeq : int64
     }
 
+type SaveResponse =
+    {
+        [<JsonName("id")>]  Id  : string
+        [<JsonName("rev")>] Rev : string
+    }
+
 module CouchDB =
     let skipResponse (request : WebRequest) : unit =
         use response = request.GetResponse()
         use stream = response.GetResponseStream()
         use textReader = new StreamReader(stream)
         ignore (textReader.ReadToEnd())
+
+    let writeRequest (request : WebRequest) (doc : 'a) : unit =
+        request.ContentType <- "application/json"
+
+        using (request.GetRequestStream()) <| fun stream ->
+            use textWriter = new StreamWriter(stream)
+            use jsonWriter = new JsonTextWriter(textWriter)
+            Json.write jsonWriter doc
 
     let parseResponse (request : WebRequest) : 'a =
         use response = request.GetResponse()
@@ -51,11 +65,15 @@ module CouchDB =
 
         let request = WebRequest.Create(uri)
         request.Method <- WebRequestMethods.Http.Put
-        using (request.GetRequestStream()) <| fun stream ->
-            use textWriter = new StreamWriter(stream)
-            use jsonWriter = new JsonTextWriter(textWriter)
-            Json.write jsonWriter doc
+        writeRequest request doc
+        parseResponse request
 
+    let post (uri : Uri) (doc : 'a) : 'b =
+        fprintfn Console.Error ">> post %O" uri
+
+        let request = WebRequest.Create(uri)
+        request.Method <- WebRequestMethods.Http.Post
+        writeRequest request doc
         parseResponse request
 
     let delete (uri : Uri) : unit =
@@ -106,9 +124,11 @@ module CouchDB =
     let getDocument (baseUri : Uri) (id : string) : 'a =
         get (Uri(baseUri, id))
 
-    let putDocument (baseUri : Uri) (id : string) (doc : 'a) : string =
-        let response : ChangeRev = put (Uri(baseUri, id)) doc
-        response.Rev
+    let putDocument (baseUri : Uri) (id : string) : 'a -> SaveResponse =
+        put (Uri(baseUri, id))
+
+    let postDocument : Uri -> 'a -> SaveResponse =
+        post
 
     let deleteDocument (baseUri : Uri) (id : string) (rev : string) : unit =
         let builder = UriBuilder(Uri(baseUri, id))
