@@ -98,18 +98,21 @@ module Main =
                         let proc = new Process()
                         proc.StartInfo <- startInfo
 
-                        proc.OutputDataReceived.Add <| fun args ->
+                        let post (s : string) =
                             let message : Message =
                                 {
                                     Rev = None
                                     Date = Some (DateTime.UtcNow.ToString("o"))
                                     MessageType = "out"
                                     SessionId = sessionId
-                                    Message = args.Data
+                                    Message = s
                                     QueueStatus = None
                                 }
 
                             ignore (postMessage message)
+
+                        proc.OutputDataReceived.Add <| fun args -> post args.Data
+                        proc.ErrorDataReceived.Add <| fun args -> post args.Data
 
                         ignore (proc.Start())
                         proc.BeginErrorReadLine()
