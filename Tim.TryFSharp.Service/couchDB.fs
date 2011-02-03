@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Net
 open System.Text
+open System.Threading
 open System.Web
 open Newtonsoft.Json
 
@@ -118,7 +119,17 @@ module CouchDB =
                 sb.AppendFormat("{0}={1}", HttpUtility.UrlEncode(name), HttpUtility.UrlEncode(value)))
             |> string
 
-        let response : ChangesResponse = get builder.Uri
+        let rec impl retries =
+            try
+                get builder.Uri
+            with :? WebException ->
+                if retries > 0 then
+                    Thread.Sleep 1000
+                    impl (retries - 1)
+                else
+                    reraise ()
+
+        let response : ChangesResponse = impl 10
         response.LastSeq, response.Results
 
     let getDocument (baseUri : Uri) (id : string) : 'a =

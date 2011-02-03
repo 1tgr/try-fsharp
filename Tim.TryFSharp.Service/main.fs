@@ -156,6 +156,7 @@ module Main =
 
     let cleanup () =
         for id, (rev, proc) in Map.toSeq !ownSessions do
+            ownSessions := Map.remove id !ownSessions
             try
                 CouchDB.deleteDocument baseUri id rev
             with _ -> ()
@@ -183,6 +184,7 @@ module Main =
                 subscribe None
             finally
                 ignore (SetConsoleCtrlHandler(handler, false))
+                cleanup ()
 
             0
         with ex ->
