@@ -122,7 +122,7 @@ module CouchDB =
         let rec impl retries =
             try
                 get builder.Uri
-            with :? WebException ->
+            with _ ->
                 if retries > 0 then
                     Thread.Sleep 1000
                     impl (retries - 1)
