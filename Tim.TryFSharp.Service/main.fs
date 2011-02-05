@@ -18,7 +18,7 @@ type Session =
 type Message =
     {
         [<JsonName("_rev")>]        Rev         : string option
-        [<JsonName("date")>]        Date        : string
+        [<JsonName("date")>]        Date        : string option
         [<JsonName("messageType")>] MessageType : string
         [<JsonName("sessionId")>]   SessionId   : string
         [<JsonName("message")>]     Message     : string
@@ -98,18 +98,21 @@ module Main =
                         let proc = new Process()
                         proc.StartInfo <- startInfo
 
-                        proc.OutputDataReceived.Add <| fun args ->
+                        let post (s : string) =
                             let message : Message =
                                 {
                                     Rev = None
-                                    Date = DateTime.UtcNow.ToString("o")
+                                    Date = Some (DateTime.UtcNow.ToString("o"))
                                     MessageType = "out"
                                     SessionId = sessionId
-                                    Message = args.Data
+                                    Message = s
                                     QueueStatus = None
                                 }
 
                             ignore (postMessage message)
+
+                        proc.OutputDataReceived.Add <| fun args -> post args.Data
+                        proc.ErrorDataReceived.Add <| fun args -> post args.Data
 
                         ignore (proc.Start())
                         proc.BeginErrorReadLine()
@@ -144,12 +147,16 @@ module Main =
     let rec subscribe (lastSeq : int64 option) =
         let lastSeq, results = CouchDB.changes baseUri (Some "app/stdin") lastSeq
         for result in results do
-            ignore (dequeue result.Id)
+            try
+                ignore (dequeue result.Id)
+            with ex ->
+                fprintfn Console.Error "%O" ex
 
         subscribe (Some lastSeq)
 
     let cleanup () =
         for id, (rev, proc) in Map.toSeq !ownSessions do
+            ownSessions := Map.remove id !ownSessions
             try
                 CouchDB.deleteDocument baseUri id rev
             with _ -> ()
@@ -177,6 +184,7 @@ module Main =
                 subscribe None
             finally
                 ignore (SetConsoleCtrlHandler(handler, false))
+                cleanup ()
 
             0
         with ex ->
