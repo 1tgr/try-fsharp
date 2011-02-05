@@ -1,5 +1,1 @@
-{
-  "view" : "recent-items",
-  "descending" : "true",
-  "limit" : 50
-}
+{"descending": "true", "limit": 50, "view": "recent-items"}

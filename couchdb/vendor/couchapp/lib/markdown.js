@@ -1296,5 +1296,3 @@ exports.main = function (system) {
         }
     }
 };
-
-

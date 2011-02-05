@@ -1,4 +1,1 @@
-{
-    "name": "Name of your CouchApp",
-    "description": "CouchApp"
-}
+{"description": "CouchApp", "name": "Name of your CouchApp"}
