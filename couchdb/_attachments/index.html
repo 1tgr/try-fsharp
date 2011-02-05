@@ -1,29 +1,168 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>My New CouchApp</title>
-    <link rel="stylesheet" href="style/main.css" type="text/css">
-  </head>
-  <body>
-    <div id="account"></div>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" id="sixapart-standard">
+<head>
+    <script language="javascript" type="text/javascript" src="_utils/script/json2.js"></script>
+    <script language="javascript" type="text/javascript" src="_utils/script/jquery.js"></script>
+    <script language="javascript" type="text/javascript" src="_utils/script/jquery.couch.js"></script>
+    <script language="javascript" type="text/javascript" src="jquery.console.js"></script>
+    <script language="javascript" type="text/javascript">
+        function init() {
+            var sessionId = $.couch.newUUID();
+            var db = $.couch.db("tryfs");
 
-    <h1>Generated CouchApp</h1>
+            function commandHandle(code) {
+                db.saveDoc({ messageType: "in", message: code, sessionId: sessionId });
+                //$.post("fsi/exec.ashx", { code: code });
+                return true;
+            }
 
-    <div id="profile"></div>
-    <div id="items"></div>
+            var console = $("#console").console({
+                welcomeMessage: "",
+                commandHandle: commandHandle
+            });
 
-    <div id="sidebar">
-      <p>Edit welcome message.</p>
-      <p>Ideas: You could easily turn this into a photo sharing app, or a grocery list, or a chat room.</p>
+            function onSend() {
+                var code = $("#code").val() + ";;";
+                console.commandResult(code, "jquery-console-message-success");
+                db.saveDoc({ messageType: "in", message: code, sessionId: sessionId });
+            }
+
+            function onAjaxError() {
+                console.commandResult("ajax error", "jquery-console-message-error");
+            }
+
+            function onChange(resp) {
+              $.each(resp.results, function() {
+                if (this.doc.messageType == "out") {
+                  console.commandResult(this.doc.message, "jquery-console-message-success");
+                }
+              });
+            }
+
+            function subscribe() {
+              db.changes(null, { filter: "app/session", include_docs: true, sessionId: sessionId }).onChange(onChange);
+            } 
+
+            setTimeout(subscribe, 500);
+            $("#send").click(onSend);
+        }
+
+        $(document).ready(init);
+    </script>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta name="generator" content="Movable Type 5.01" />
+<link rel="stylesheet" href="http://tryfs.net/styles.css" type="text/css" />
+<link rel="start" href="http://tryfs.net/" title="Home" />
+<link rel="alternate" type="application/atom+xml" title="Recent Entries" href="http://tryfs.net/atom.xml" />
+<link rel="shortcut icon" href="fslogo.ico" />
+<script type="text/javascript" src="http://tryfs.net/mt.js"></script>
+
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-8369986-3']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+    <link rel="EditURI" type="application/rsd+xml" title="RSD" href="http://tryfs.net/rsd.xml" />
+    <title>Try F#</title>
+</head>
+<body id="classic-website" class="mt-main-index layout-wt">
+    <div id="container">
+        <div id="container-inner">
+
+
+            <div id="header">
+    <div id="header-inner">
+        <div id="header-content">
+
+
+            <h1 id="header-name"><a href="http://tryfs.net/" accesskey="1">Try F#</a></h1>
+            <h2 id="header-description"></h2>
+
+        </div>
     </div>
-  </body>
-  <script src="vendor/couchapp/loader.js"></script>
-  <script type="text/javascript" charset="utf-8">
-    $.couch.app(function(app) {
-      $("#account").evently("account", app);
-      $("#profile").evently("profile", app);
-      $.evently.connect("#account","#profile", ["loggedIn","loggedOut"]);
-      $("#items").evently("items", app);
-    }, { db: "tryfs", design: "couchdb" });
-  </script>
+</div>
+
+
+            <div id="fsi">
+                <div id="fsi-inner">
+                    <div>
+                        <textarea id="code" class="console" cols="40" rows="25">let hello who = printfn "Hello %s!" who
+hello "world"</textarea></div>
+                    <div id="toolbar">
+                        <input id="send" type="button" value="Send" /></div>
+                    <div id="console" class="console"></div>
+                </div>
+            </div>
+
+            <div id="content">
+                <div id="content-inner">
+                    <div id="alpha">
+                        <div id="alpha-inner">
+
+
+                            <div class="entry-asset asset hentry">
+                                <div class="asset-header">
+                                    <h2 class="asset-name entry-title">Try F# in your web browser</h2>
+                                </div>
+                                <div class="asset-content entry-content">
+                                    <div class="asset-body">
+                                        <p><strong><a href="http://fssnip.net/">Type some F# code</a> and press the Send button.</strong> Alternatively, type an F# expression at the cursor, followed by <code>;;</code>, and press Enter.</p>
+<p><a href="http://msdn.microsoft.com/en-us/fsharp/default">F# on MSDN</a><br />
+<a href="http://msdn.microsoft.com/library/dd233154.aspx">F# manual</a><br/>
+<a href="http://hubfs.net">hubFS: THE place for F#</a></p>
+
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+
+                        </div>
+                    </div>
+                    <div id="beta">
+                        <div id="beta-inner">
+                            <div class="widget">
+                                <div class="widget-content">
+This project coded by Tim&nbsp;Robinson
+<ul>
+<li><img src="icon-github.png" width="16" height="16" alt="Github" valign="middle"/> <a href="https://github.com/timrobinson/try-fsharp">timrobinson/try-fsharp</a></li>
+<li><img src="icon-twitter.png" width="16" height="16" alt="Twitter" valign="middle"/> <a href="http://twitter.com/tim_g_robinson">@tim_g_robinson</a></li>
+</ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+
+            <div id="footer">
+    <div id="footer-inner">
+        <div id="footer-content">
+            <div class="widget-powered widget">
+                <div class="widget-content">
+                    Powered by <a href="http://www.movabletype.com/" rel="generator">Movable Type</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+        </div>
+    </div>
+</body>
 </html>

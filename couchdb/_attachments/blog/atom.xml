@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Try F#</title>
+    <link rel="alternate" type="text/html" href="http://tryfs.net/blog/" />
+    <link rel="self" type="application/atom+xml" href="http://tryfs.net/blog/atom.xml" />
+    <id>tag:tryfs.net,2011-01-18:/blog//10</id>
+    <updated>2011-01-18T22:59:40Z</updated>
+    
+    <generator uri="http://www.sixapart.com/movabletype/">Movable Type 5.01</generator>
+
+<entry>
+    <title>Thanks, Hacker News!</title>
+    <link rel="alternate" type="text/html" href="http://tryfs.net/blog/2011/01/thanks-hacker-news.html" />
+    <id>tag:tryfs.net,2011://10.91</id>
+
+    <published>2011-01-18T22:53:22Z</published>
+    <updated>2011-01-18T22:59:40Z</updated>
+
+    <summary>I got some great beta testingfeedback on the Hacker News comments for this site. Try F# still relatively stable, although I&apos;d like to go back and make the fsi.exe launching process a little more robust; I&apos;m having to shut down...</summary>
+    <author>
+        <name>Tim Robinson</name>
+        
+    </author>
+    
+    
+    <content type="html" xml:lang="en-us" xml:base="http://tryfs.net/blog/">
+        <![CDATA[<p>I got some great <strike>beta testing</strike>feedback on the <a href="http://news.ycombinator.com/item?id=2115576">Hacker News comments for this site</a>. Try F# still relatively stable, although I'd like to go back and make the fsi.exe launching process a little more robust; I'm having to shut down old processes by hand.</p>
+<p>Unfortunately my amateur web programming skills have prevented the site from working in IE8 at the moment, likely due to <a href="http://www.codinghorror.com/blog/2008/08/protecting-your-cookies-httponly.html">HttpOnly cookies not being passed back to Javascript</a>. The only excuse I can attempt is that I've been testing on two browsers more commonly available on Mac OS X.</p>
+<p>I'm planning on re-doing the Ajax mechanism -- which currently polls once a second for console output from the fsi.exe process -- and replacing it with long polling against a database of text output. That way I can decouple fsi.exe from the web app, and I can remove dependence on ASP.NET's session cookie.</p>
+<p>Thanks all for your constructive feedback, and thanks in particular to IE users for your patience...</p>]]>
+        
+    </content>
+</entry>
+
+</feed>

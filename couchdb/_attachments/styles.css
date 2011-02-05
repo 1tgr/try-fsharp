@@ -1,0 +1,429 @@
+@import url(http://tryfs.net/mt-static/themes-base/blog.css);
+
+/* Default ---------------------------------------------------------------- */
+
+/* Global */
+
+body {
+    font: normal 13px helvetica, arial, hirakakupro-w3, osaka, "ms pgothic", sans-serif;
+}
+
+
+/* Header */
+
+#header-name {
+    margin: 0 0 5px;
+    line-height: 1;
+}
+
+#header-description {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.125;
+}
+
+#header a {
+    text-decoration: none;
+}
+
+#header a:hover {
+    text-decoration: underline;
+}
+
+
+/* Content */
+
+.asset-name {
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.asset-name a {
+    text-decoration: none;
+}
+
+.asset-name a:hover {
+    text-decoration: underline;
+}
+
+.asset-content {
+    margin: 5px 0;
+}
+
+.asset-more-link {
+    font-weight: bold;
+}
+
+.asset-meta {
+    border-top: 1px solid #ccc;
+}
+
+.asset-footer {
+    border-top: 1px solid #ccc;
+}
+
+.content-nav {
+    margin: 5px 0 10px;
+}
+
+.archive-title {
+    margin: 5px 0 30px;
+    font-size: 26px;
+    font-weight: bold;
+}
+
+.widget-header,
+.trackbacks-header,
+.comments-header,
+.comments-open-header,
+.archive-header,
+.search-form-header,
+.search-results-header {
+    margin: 0;
+    padding: 5px 0;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.search-results-header {
+    margin-bottom: .25em;
+}
+
+.asset-more-link,
+.asset-meta,
+.typelist-thumbnailed {
+    font-size: 11px;
+}
+
+/* Footer */
+
+#footer-content,
+#footer-content a {
+    color: #111;
+}
+
+
+
+/* Utility */
+
+.widget-header,
+.trackbacks-header,
+.comments-header,
+.comments-open-header,
+.archive-header,
+.search-form-header,
+.search-results-header {
+    /* ie win (5, 5.5, 6) bugfix */
+    p\osition: relative;
+    width: 100%;
+    w\idth: auto;
+}
+
+/* Global ----------------------------------------------------------------- */
+
+body {
+    color: #333;  
+    background-color: #ffb300; 
+}
+
+a {
+    color: #1533ad; 
+}
+
+a:hover {
+    text-decoration: none;
+}
+
+
+/* Layout ----------------------------------------------------------------- */
+
+#container-inner {
+    background-color: #ffb300;
+}
+
+#content-inner {
+    background-color: #fff;
+}
+
+#header-inner, #footer-inner {
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+#content-inner {
+    padding: 19px 0px 0px 0px;
+    border: solid 1px #ae8a37;
+}
+
+#header-inner, #footer-inner, #beta-inner, #gamma-inner {
+    padding-right: 0;
+    padding-left: 0;
+}
+
+#content { 
+    margin-top: 20px;  
+    margin-bottom: 20px;  
+}
+
+#container-inner {
+    width: 100%;
+    margin-right: 0;
+    margin-left: 0;
+}
+
+#header-inner,
+#footer-inner,
+#content-inner,
+#fsi-inner {
+    width: 940px;
+    position: relative;
+    margin: 0 auto;
+}
+
+
+/* Header ----------------------------------------------------------------- */
+
+#header-content {
+    width: 842px; 
+    margin: 20px 0 20px 20px;
+}
+
+#header-name {
+    color: #eee; 
+    font-size: 34px;
+    font-weight: bold;
+    text-shadow: #111 1px 1px 1px;
+}
+
+#header-name a {
+    color: #eee; 
+}
+
+#header-description {
+    color: #111;  
+}
+
+
+/* Content ---------------------------------------------------------------- */
+
+.asset-name,
+.asset-name a,
+.archive-title {
+    color: #000;
+}
+
+.asset-footer {
+    border-top-color: #ddd;
+}
+
+.comments-header,
+.comments-open-header,
+.trackbacks-header,
+.archive-header,
+.search-form-header,
+.search-results-header {
+    color: #333;
+}
+
+.comment,
+.trackback {
+    border-color: #ddd;
+}
+
+
+ .asset-name a {
+    margin-bottom: 8px;
+}
+
+.asset-name a:hover {
+    text-decoration: underline;
+}
+
+.archive-list-item {
+    margin-bottom: 5px;
+}
+
+
+/* Widget ----------------------------------------------------------------- */
+
+.widget-header,
+.widget-content {
+    margin-right: 15px;
+    margin-left: 15px;
+}
+
+.widget-header { 
+    border-width: 0 0 1px;
+    border-style: solid;
+    border-color: #ccc; 
+    padding: 0;
+    font-size: 14px; 
+    margin-bottom: 8px;
+    padding-bottom: .3em; 
+}
+
+.widget-header,
+.widget-header a {
+    color: #333;
+    font-weight: normal;
+}
+
+.widget-content a {
+    color: #666;
+}
+
+#content .widget-powered .widget-content {
+    margin-top: 15px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    background-color: #f8f8f8;
+} 
+
+.widget-header {
+    font-size: 14px;
+}
+
+.widget-header a {
+    text-decoration: none;
+}
+
+.widget-header a:hover {
+    text-decoration: underline;
+}
+
+.widget-content {
+    margin-top: 5px;
+    margin-bottom: 20px;
+    font-size: 11px;
+}
+
+
+/* "Powered By" Widget */
+
+.widget-powered .widget-content {
+    padding: 10px;
+    text-align: center;
+}
+
+
+/* Calendar Widget */
+
+.widget-calendar .widget-content table {
+    font-size: 10px;
+}
+
+
+/* Footer Widgets */
+
+#footer .widget {
+    margin: 10px 0;
+}
+
+#footer .widget-content {
+    padding-right: 0;
+    padding-left: 0;
+}
+
+#footer .widget-powered .widget-content {
+    padding: 0;
+    text-align: left;
+}
+
+
+/* Footer ----------------------------------------------------------------- */
+
+#footer-content {
+    margin: 20px 0;
+}
+
+
+/* Utilities -------------------------------------------------------------- */
+
+#header:after,
+#header-inner:after,
+#content:after,
+#fsi:after,
+#alpha-inner:after,
+#beta-inner:after,
+#gamma-inner:after,
+#footer:after {
+    content: " ";
+    display: block;
+    visibility: hidden;
+    clear: both;
+    height: 0.1px;
+    font-size: 0.1em;
+    line-height: 0;
+}
+
+
+#header-inner,
+#content-inner,
+#fsi-inner,
+#footer-inner,
+.asset-body {
+    height: 1%;
+}
+
+
+/* Custom Styles ---------------------------------------------------------- */
+
+#header-nav-inner {
+    position: relative;
+    width: 900px;
+    margin: 0 auto;
+}
+
+/* Default ---------------------------------------------------------------- */
+
+#toolbar {
+    padding: 10px 0px;
+}
+
+.console
+{
+    font-size: 14px;
+}
+.console div.jquery-console-inner, #code
+{
+    width: 924px;
+    height: 200px;
+    background: #333;
+    padding: 0.5em;
+    overflow: auto;
+    border: solid 1px #222;
+}
+.console div.jquery-console-prompt-box, .console div.jquery-console-message-success, #code
+{
+color: #fff;
+font-family: monospace;
+}
+.console div.jquery-console-focus span.jquery-console-cursor
+{
+background: #fefefe;
+color: #333;
+font-weight: bold;
+}
+.console div.jquery-console-message-error
+{
+color: #ef0505;
+font-family: sans-serif;
+font-weight: bold;
+padding: 0.1em;
+}
+.console div.jquery-console-message-value
+{
+color: #1ad027;
+font-family: monospace;
+padding: 0.1em;
+}
+.console div.jquery-console-message-type
+{
+color: #52666f;
+font-family: monospace;
+padding: 0.1em;
+}
+.console span.jquery-console-prompt-label
+{
+font-weight: bold;
+}
