@@ -1,8 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tim.TryFSharp.Web", "Tim.TryFSharp.Web\Tim.TryFSharp.Web.csproj", "{218FD1F7-3592-4867-9C26-E03210464E9A}"
-EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tim.TryFSharp.Interactive", "Tim.TryFSharp.Interactive\Tim.TryFSharp.Interactive.fsproj", "{4025D560-1047-4EBD-8BF8-4A832C8882B1}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tim.TryFSharp.Test", "Tim.TryFSharp.Test\Tim.TryFSharp.Test.fsproj", "{2C8FF113-8B5F-4B4C-9D8B-B0004D62BBC3}"
@@ -15,10 +13,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{218FD1F7-3592-4867-9C26-E03210464E9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{218FD1F7-3592-4867-9C26-E03210464E9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{218FD1F7-3592-4867-9C26-E03210464E9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{218FD1F7-3592-4867-9C26-E03210464E9A}.Release|Any CPU.Build.0 = Release|Any CPU
 		{4025D560-1047-4EBD-8BF8-4A832C8882B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{4025D560-1047-4EBD-8BF8-4A832C8882B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4025D560-1047-4EBD-8BF8-4A832C8882B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
