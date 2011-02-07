@@ -9,7 +9,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>Tim.TryFSharp.Service</RootNamespace>
     <AssemblyName>Tim.TryFSharp.Service</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <Name>Tim.TryFSharp.Service</Name>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
