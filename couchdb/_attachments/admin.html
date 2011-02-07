@@ -2,46 +2,18 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" id="sixapart-standard">
 <head>
-    <title>Try F#</title>
+    <title>Admin - Try F#</title>
     <script language="javascript" type="text/javascript" src="/_utils/script/json2.js"></script>
     <script language="javascript" type="text/javascript" src="/_utils/script/jquery.js"></script>
     <script language="javascript" type="text/javascript" src="/_utils/script/jquery.couch.js"></script>
-    <script language="javascript" type="text/javascript" src="jquery.console.js"></script>
     <script language="javascript" type="text/javascript">
         function init() {
-            var sessionId = $.couch.newUUID();
             var db = $.couch.db("tryfs");
 
-            function commandHandle(code) {
-                db.saveDoc({ messageType: "in", message: code, sessionId: sessionId });
-                return true;
+            function onCleanup() {
             }
 
-            var console = $("#console").console({
-                welcomeMessage: "",
-                commandHandle: commandHandle
-            });
-
-            function onSend() {
-                var code = $("#code").val() + ";;";
-                console.commandResult(code, "jquery-console-message-success");
-                db.saveDoc({ messageType: "in", message: code, sessionId: sessionId });
-            }
-
-            function onChange(resp) {
-              $.each(resp.results, function() {
-                if (this.doc.messageType == "out") {
-                  console.commandResult(this.doc.message, "jquery-console-message-success");
-                }
-              });
-            }
-
-            function subscribe() {
-              db.changes(null, { filter: "app/session", include_docs: true, sessionId: sessionId }).onChange(onChange);
-            } 
-
-            setTimeout(subscribe, 500);
-            $("#send").click(onSend);
+            $("#cleanup").click(onCleanup);
         }
 
         $(document).ready(init);
@@ -82,17 +54,6 @@
 </div>
 
 
-            <div id="fsi">
-                <div id="fsi-inner">
-                    <div>
-                        <textarea id="code" class="console" cols="40" rows="25">let hello who = printfn "Hello %s!" who
-hello "world"</textarea></div>
-                    <div id="toolbar">
-                        <input id="send" type="button" value="Send" /></div>
-                    <div id="console" class="console"></div>
-                </div>
-            </div>
-
             <div id="content">
                 <div id="content-inner">
                     <div id="alpha">
@@ -101,14 +62,11 @@ hello "world"</textarea></div>
 
                             <div class="entry-asset asset hentry">
                                 <div class="asset-header">
-                                    <h2 class="asset-name entry-title">Try F# in your web browser</h2>
+                                    <h2 class="asset-name entry-title">Admin</h2>
                                 </div>
                                 <div class="asset-content entry-content">
                                     <div class="asset-body">
-                                        <p><strong><a href="http://fssnip.net/">Type some F# code</a> and press the Send button.</strong> Alternatively, type an F# expression at the cursor, followed by <code>;;</code>, and press Enter.</p>
-<p><a href="http://msdn.microsoft.com/en-us/fsharp/default">F# on MSDN</a><br />
-<a href="http://msdn.microsoft.com/library/dd233154.aspx">F# manual</a><br/>
-<a href="http://hubfs.net">hubFS: THE place for F#</a></p>
+                                        <p><input id="cleanup" type="button" value="Delete old messages"/></p>
 
                                     </div>
                                 </div>
@@ -127,7 +85,6 @@ This project coded by Tim&nbsp;Robinson
 <ul>
 <li><img src="icon-github.png" width="16" height="16" alt="Github" valign="middle"/> <a href="https://github.com/timrobinson/try-fsharp">timrobinson/try-fsharp</a></li>
 <li><img src="icon-twitter.png" width="16" height="16" alt="Twitter" valign="middle"/> <a href="http://twitter.com/tim_g_robinson">@tim_g_robinson</a></li>
-<li><img src="couchdb-icon-16px.png" width="16" height="16" alt="CouchDB" valign="middle"/> Powered by CouchDB</li>
 </ul>
                                 </div>
                             </div>
