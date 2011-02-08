@@ -54,12 +54,28 @@ module CouchDB =
         use jsonReader = new JsonTextReader(textReader)
         Json.parse jsonReader
 
+    let parseResponseAsync (request : WebRequest) : Async<'a> =
+        async {
+        use! response = request.AsyncGetResponse()
+        use stream = response.GetResponseStream()
+        use textReader = new StreamReader(stream)
+        use jsonReader = new JsonTextReader(textReader)
+        return Json.parse jsonReader
+        }
+
     let get (uri : Uri) : 'a =
         fprintfn Console.Error ">> get %O" uri
 
         let request = WebRequest.Create(uri)
         request.Method <- WebRequestMethods.Http.Get
         parseResponse request
+
+    let getAsync (uri : Uri) : Async<'a> =
+        fprintfn Console.Error ">> get %O" uri
+
+        let request = WebRequest.Create(uri)
+        request.Method <- WebRequestMethods.Http.Get
+        parseResponseAsync request
 
     let put (uri : Uri) (doc : 'a) : 'b =
         fprintfn Console.Error ">> put %O" uri
@@ -92,7 +108,7 @@ module CouchDB =
             | :? HttpWebResponse as response when response.StatusCode = HttpStatusCode.Conflict -> None
             | _ -> reraise ()
 
-    let changes (baseUri : Uri) (filter : string option) (lastSeq : int64 option) : int64 * Change array =
+    let changes (baseUri : Uri) (filter : string option) (lastSeq : int64 option) : Async<int64 * Change array> =
         let query =
             seq {
                 yield "feed", "longpoll"
@@ -119,18 +135,22 @@ module CouchDB =
                 sb.AppendFormat("{0}={1}", HttpUtility.UrlEncode(name), HttpUtility.UrlEncode(value)))
             |> string
 
-        let rec impl retries =
-            try
-                get builder.Uri
-            with _ ->
-                if retries > 0 then
-                    Thread.Sleep 1000
-                    impl (retries - 1)
-                else
-                    reraise ()
+        let rec impl retries : Async<ChangesResponse> =
+            async {
+                try
+                    return! getAsync builder.Uri
+                with ex ->
+                    if retries > 0 then
+                        Thread.Sleep 1000
+                        return! impl (retries - 1)
+                    else
+                        return raise ex 
+            }
 
-        let response : ChangesResponse = impl 10
-        response.LastSeq, response.Results
+        async {
+            let! response = impl 10
+            return response.LastSeq, response.Results
+        }
 
     let getDocument (baseUri : Uri) (id : string) : 'a =
         get (Uri(baseUri, id))

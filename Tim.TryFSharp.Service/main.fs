@@ -145,7 +145,7 @@ module Main =
             None
 
     let rec subscribe (lastSeq : int64 option) =
-        let lastSeq, results = CouchDB.changes baseUri (Some "app/stdin") lastSeq
+        let lastSeq, results = Async.RunSynchronously (CouchDB.changes baseUri (Some "app/stdin") lastSeq)
         for result in results do
             try
                 ignore (dequeue result.Id)
@@ -171,19 +171,40 @@ module Main =
 
     type ConsoleCtrlDelegate = delegate of int -> bool
 
-    [<DllImport("kernel32.dll")>]
-    extern bool SetConsoleCtrlHandler(ConsoleCtrlDelegate handlerRoutine, bool add)
+    type WindowsCtrlCHandler(cleanup : unit -> unit) =
+        [<DllImport("kernel32.dll")>]
+        extern bool SetConsoleCtrlHandler(ConsoleCtrlDelegate handlerRoutine, bool add)
+
+        let handler = ConsoleCtrlDelegate(fun _ -> cleanup (); false)
+        do ignore (SetConsoleCtrlHandler(handler, true))
+
+        interface IDisposable with
+            member t.Dispose() =
+                ignore (SetConsoleCtrlHandler(handler, false))
+
+    type MonoCtrlCHandler(cleanup : unit -> unit) =
+        interface IDisposable with
+            member t.Dispose() =
+                // TODO
+                ()
+
+    let isMono =
+        match Type.GetType ("Mono.Runtime") with
+        | null -> false
+        | _ -> true
+
+    let handleCtrlC cleanup =
+        if isMono then
+            new MonoCtrlCHandler(cleanup) :> IDisposable
+        else
+            new WindowsCtrlCHandler(cleanup) :> IDisposable
 
     [<EntryPoint>]
     let main _ =
         try
-            let handler = ConsoleCtrlDelegate(fun _ -> cleanup (); false)
-            ignore (SetConsoleCtrlHandler(handler, true))
-
             try
-                subscribe None
+                using (handleCtrlC cleanup) <| fun _ -> subscribe None
             finally
-                ignore (SetConsoleCtrlHandler(handler, false))
                 cleanup ()
 
             0
