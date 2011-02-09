@@ -246,11 +246,15 @@ module Main =
             let subscribe =
                 let rec impl lastSeq =
                     async {
-                        let! lastSeq, results = CouchDB.changes baseUri (Some "app/stdin") lastSeq
+                        let! lastSeq, (results : Change<Message> array) = CouchDB.changes baseUri (Some "app/stdin") lastSeq
                         for result in results do
-                            match TryFSharpDB.getMessage baseUri result.Id with
-                            | { QueueStatus = None } as message -> mailbox.Post (StdIn (result.Id, message))
-                            | _ -> ()
+                            let message =
+                                match result.Doc with
+                                | Some message -> message
+                                | None -> TryFSharpDB.getMessage baseUri result.Id
+
+                            if Option.isNone message.QueueStatus then
+                                mailbox.Post (StdIn (result.Id, message))
 
                         return! impl (Some lastSeq)
                     }
