@@ -96,8 +96,15 @@ and App =
                         | null -> Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
                         | s -> s
 
+                    let filename = Path.Combine(programFiles, @"Microsoft F#\v4.0\fsi.exe")
+
                     let startInfo = new ProcessStartInfo()
-                    startInfo.FileName <- Path.Combine(programFiles, @"Microsoft F#\v4.0\fsi.exe")
+                    startInfo.FileName <-
+                        if File.Exists(filename) then
+                            filename
+                        else
+                            "fsi"
+
                     startInfo.WorkingDirectory <- Path.GetTempPath()
                     startInfo.RedirectStandardError <- true
                     startInfo.RedirectStandardInput <- true
