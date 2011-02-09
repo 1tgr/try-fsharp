@@ -115,11 +115,11 @@ and App =
                     let proc = new Process()
                     proc.StartInfo <- startInfo
 
-                    let resetRecycleTimer =
+                    (* let resetRecycleTimer =
                         let callback _ = inbox.Post (Recycle (id, rev.Rev, proc))
                         let timer = new Timer(TimerCallback(callback))
                         fun () ->
-                            ignore (timer.Change(TimeSpan.FromHours(1.0), TimeSpan.FromMilliseconds(-1.0)))
+                            ignore (timer.Change(TimeSpan.FromHours(1.0), TimeSpan.FromMilliseconds(-1.0))) *)
 
                     let post =
                         function
@@ -135,10 +135,10 @@ and App =
                                     QueueStatus = None
                                 }
 
-                            resetRecycleTimer ()
+                            //resetRecycleTimer ()
                             inbox.Post (StdOut message)
 
-                    resetRecycleTimer ()
+                    //resetRecycleTimer ()
                     proc.OutputDataReceived.Add <| fun args -> post args.Data
                     proc.ErrorDataReceived.Add <| fun args -> post args.Data
 
@@ -181,21 +181,17 @@ and App =
 
             | StdIn (id, message) ->
                 let app, claim = this.ClaimSession inbox message.SessionId
-                let app =
-                    match claim with
-                    | OtherSession otherServerId ->
-                        fprintfn Console.Error "Ignoring %s - owned by session %s on %s" id message.SessionId otherServerId
-                        app
+                match claim with
+                | OtherSession otherServerId ->
+                    fprintfn Console.Error "Ignoring %s - owned by session %s on %s" id message.SessionId otherServerId
 
-                    | OwnSession proc ->
-                        let rev = TryFSharpDB.putMessage this.BaseUri id { message with QueueStatus = Some "done" }
-                        let message = { message with Rev = Some rev.Rev }
-                        proc.StandardInput.WriteLine message.Message
-                        app
+                | OwnSession proc ->
+                    let rev = TryFSharpDB.putMessage this.BaseUri id { message with QueueStatus = Some "done" }
+                    let message = { message with Rev = Some rev.Rev }
+                    proc.StandardInput.WriteLine message.Message
 
-                    | ProcessFailed ex ->
-                        fprintfn Console.Error "%O" ex
-                        app
+                | ProcessFailed ex ->
+                    fprintfn Console.Error "%O" ex
 
                 return! app.Run inbox
 
