@@ -132,6 +132,7 @@ and App =
                         let rev = TryFSharpDB.putSession this.BaseUri id { session with Rev = Some rev.Rev; FsiPid = Some (int64 proc.Id) }
                         { this with OwnSessions = Map.add id (rev.Rev, proc) this.OwnSessions }, OwnSession proc
                     with ex ->
+                        CouchDB.deleteDocument this.BaseUri id rev.Rev
                         this, ProcessFailed ex
 
                 | None ->
