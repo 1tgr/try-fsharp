@@ -1,0 +1,11 @@
+function(newDoc, oldDoc, userCtx) {
+    if (newDoc.messageType == "in") {
+        if (newDoc.sessionId === undefined) {
+            throw { forbidden: "sessionId must be set" };
+        }
+
+        if (newDoc.message === undefined) {
+            throw { forbidden: "message mus tbe set" };
+        }
+    }
+}
