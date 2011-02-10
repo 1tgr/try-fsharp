@@ -61,6 +61,7 @@ type MailboxMessage =
     | Exit of AsyncReplyChannel<App>
     | StdIn of string * Message
     | StdOut of Message
+    | Recycle of string * string * Process
     
 and App =
     {
@@ -114,19 +115,30 @@ and App =
                     let proc = new Process()
                     proc.StartInfo <- startInfo
 
-                    let post (s : string) =
-                        let message : Message =
-                            {
-                                Rev = None
-                                Date = Some (DateTime.UtcNow.ToString("o"))
-                                MessageType = "out"
-                                SessionId = sessionId
-                                Message = s
-                                QueueStatus = None
-                            }
+                    (* let resetRecycleTimer =
+                        let callback _ = inbox.Post (Recycle (id, rev.Rev, proc))
+                        let timer = new Timer(TimerCallback(callback))
+                        fun () ->
+                            ignore (timer.Change(TimeSpan.FromHours(1.0), TimeSpan.FromMilliseconds(-1.0))) *)
 
-                        inbox.Post (StdOut message)
+                    let post =
+                        function
+                        | null -> ()
+                        | s ->
+                            let message : Message =
+                                {
+                                    Rev = None
+                                    Date = Some (DateTime.UtcNow.ToString("o"))
+                                    MessageType = "out"
+                                    SessionId = sessionId
+                                    Message = s
+                                    QueueStatus = None
+                                }
 
+                            //resetRecycleTimer ()
+                            inbox.Post (StdOut message)
+
+                    //resetRecycleTimer ()
                     proc.OutputDataReceived.Add <| fun args -> post args.Data
                     proc.ErrorDataReceived.Add <| fun args -> post args.Data
 
@@ -144,6 +156,20 @@ and App =
 
                 | None ->
                     this.ClaimSession inbox sessionId
+
+    member private this.KillSession (id : string) (rev : string) (proc : Process) : App =
+        try
+            CouchDB.deleteDocument this.BaseUri id rev
+        with _ -> ()
+
+        if not proc.HasExited then
+            try
+                proc.Kill()
+                ignore (proc.WaitForExit(5000))
+            with _ -> ()
+
+        proc.Dispose()
+        { this with OwnSessions = Map.remove id this.OwnSessions }
 
     member this.Run (inbox : MailboxProcessor<_>) : Async<unit> =
         async {
@@ -172,22 +198,17 @@ and App =
             | StdOut message ->
                 ignore (TryFSharpDB.postMessage this.BaseUri message)
                 return! this.Run inbox
+
+            | Recycle (id, rev, proc) ->
+                let app = this.KillSession id rev proc
+                return! app.Run inbox
         }
 
     interface IDisposable with
         member this.Dispose() =
-            for id, (rev, proc) in Map.toSeq this.OwnSessions do
-                try
-                    CouchDB.deleteDocument this.BaseUri id rev
-                with _ -> ()
-
-                if not proc.HasExited then
-                    try
-                        proc.Kill()
-                        proc.WaitForExit()
-                    with _ -> ()
-
-                proc.Dispose()
+            (this, this.OwnSessions)
+            ||> Map.fold (fun app id (rev, proc) -> app.KillSession id rev proc)
+            |> ignore
 
 type ICtrlCHandler =
     inherit IDisposable
@@ -246,11 +267,15 @@ module Main =
             let subscribe =
                 let rec impl lastSeq =
                     async {
-                        let! lastSeq, results = CouchDB.changes baseUri (Some "app/stdin") lastSeq
+                        let! lastSeq, (results : Change<Message> array) = CouchDB.changes baseUri (Some "app/stdin") lastSeq
                         for result in results do
-                            match TryFSharpDB.getMessage baseUri result.Id with
-                            | { QueueStatus = None } as message -> mailbox.Post (StdIn (result.Id, message))
-                            | _ -> ()
+                            let message =
+                                match result.Doc with
+                                | Some message -> message
+                                | None -> TryFSharpDB.getMessage baseUri result.Id
+
+                            if Option.isNone message.QueueStatus then
+                                mailbox.Post (StdIn (result.Id, message))
 
                         return! impl (Some lastSeq)
                     }

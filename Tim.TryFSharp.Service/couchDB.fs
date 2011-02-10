@@ -13,16 +13,17 @@ type ChangeRev =
         [<JsonName("rev")>] Rev : string
     }
 
-type Change =
+type Change<'a> =
     {
         [<JsonName("seq")>]     Seq     : int64
         [<JsonName("id")>]      Id      : string
         [<JsonName("changes")>] Changes : ChangeRev array
+        [<JsonName("doc")>]     Doc     : 'a option
     }
 
-type ChangesResponse =
+type ChangesResponse<'a> =
     {
-        [<JsonName("results")>]  Results : Change array
+        [<JsonName("results")>]  Results : Change<'a> array
         [<JsonName("last_seq")>] LastSeq : int64
     }
 
@@ -56,11 +57,11 @@ module CouchDB =
 
     let parseResponseAsync (request : WebRequest) : Async<'a> =
         async {
-        use! response = request.AsyncGetResponse()
-        use stream = response.GetResponseStream()
-        use textReader = new StreamReader(stream)
-        use jsonReader = new JsonTextReader(textReader)
-        return Json.parse jsonReader
+            use! response = request.AsyncGetResponse()
+            use stream = response.GetResponseStream()
+            use textReader = new StreamReader(stream)
+            use jsonReader = new JsonTextReader(textReader)
+            return Json.parse jsonReader
         }
 
     let get (uri : Uri) : 'a =
@@ -108,10 +109,12 @@ module CouchDB =
             | :? HttpWebResponse as response when response.StatusCode = HttpStatusCode.Conflict -> None
             | _ -> reraise ()
 
-    let changes (baseUri : Uri) (filter : string option) (lastSeq : int64 option) : Async<int64 * Change array> =
+    let changes (baseUri : Uri) (filter : string option) (lastSeq : int64 option) : Async<int64 * Change<'a> array> =
         let query =
             seq {
                 yield "feed", "longpoll"
+                yield "heartbeat", "10000"
+                yield "include_docs", "true"
 
                 match filter with
                 | Some filter -> yield "filter", filter
@@ -135,7 +138,7 @@ module CouchDB =
                 sb.AppendFormat("{0}={1}", HttpUtility.UrlEncode(name), HttpUtility.UrlEncode(value)))
             |> string
 
-        let rec impl retries : Async<ChangesResponse> =
+        let rec impl retries : Async<ChangesResponse<'a>> =
             async {
                 try
                     return! getAsync builder.Uri
