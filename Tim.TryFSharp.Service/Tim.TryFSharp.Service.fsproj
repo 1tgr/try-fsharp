@@ -45,7 +45,7 @@
     <WarningLevel>3</WarningLevel>
     <DocumentationFile />
     <PlatformTarget>AnyCPU</PlatformTarget>
-    <StartArguments>http://veneto:5984/tryfs/</StartArguments>
+    <StartArguments>http://tryfs.net/tryfs/</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -75,6 +75,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="json.fs" />
+    <Compile Include="log.fs" />
+    <Compile Include="fsiProcess.fs" />
     <Compile Include="couchDB.fs" />
     <Compile Include="main.fs" />
   </ItemGroup>

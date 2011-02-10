@@ -2,7 +2,6 @@
 
 open System
 open System.Diagnostics
-open System.IO
 open System.Net
 open System.Threading
 open System.Runtime.InteropServices
@@ -52,25 +51,25 @@ module TryFSharpDB =
     let postMessage : Uri -> Message -> SaveResponse =
         CouchDB.postDocument
 
-type Claim =
-    | OwnSession of Process
-    | OtherSession of string
-    | ProcessFailed of Exception
-
 type MailboxMessage =
     | Exit of AsyncReplyChannel<App>
     | StdIn of string * Message
     | StdOut of Message
-    | Recycle of string * string * Process
-    
+    | Recycle of string
+
+and Claim =
+    | OwnSession of FsiProcess
+    | OtherSession of string * int64
+    | ProcessFailed of Exception
+
 and App =
     {
         OwnServerId : string
         BaseUri : Uri
-        OwnSessions : Map<string, string * Process>
+        OwnSessions : Map<string, string * FsiProcess>
     } with
-    member private this.ClaimSession (inbox : MailboxProcessor<_>) (sessionId : string) : App * Claim =
-        let id = sprintf "session-%s" sessionId
+    member private this.ClaimSession (inbox : MailboxProcessor<_>) (sessionName : string) : App * Claim =
+        let id = sprintf "session-%s" sessionName
         match Map.tryFind id this.OwnSessions with
         | Some (_, proc) ->
             this, OwnSession proc
@@ -78,7 +77,7 @@ and App =
         | None ->
             match TryFSharpDB.getSession this.BaseUri id with
             | Some session ->
-                this, OtherSession session.Owner
+                this, OtherSession(session.Host, session.ServicePid)
 
             | None ->
                 let session : Session =
@@ -92,116 +91,84 @@ and App =
 
                 match TryFSharpDB.safePutSession this.BaseUri id session with
                 | Some rev ->
-                    let programFiles =
-                        match Environment.GetEnvironmentVariable("ProgramFiles(x86)") with
-                        | null -> Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
-                        | s -> s
-
-                    let filename = Path.Combine(programFiles, @"Microsoft F#\v4.0\fsi.exe")
-
-                    let startInfo = new ProcessStartInfo()
-                    startInfo.FileName <-
-                        if File.Exists(filename) then
-                            filename
-                        else
-                            "fsi"
-
-                    startInfo.WorkingDirectory <- Path.GetTempPath()
-                    startInfo.RedirectStandardError <- true
-                    startInfo.RedirectStandardInput <- true
-                    startInfo.RedirectStandardOutput <- true
-                    startInfo.UseShellExecute <- false
-
-                    let proc = new Process()
-                    proc.StartInfo <- startInfo
-
-                    (* let resetRecycleTimer =
-                        let callback _ = inbox.Post (Recycle (id, rev.Rev, proc))
-                        let timer = new Timer(TimerCallback(callback))
-                        fun () ->
-                            ignore (timer.Change(TimeSpan.FromHours(1.0), TimeSpan.FromMilliseconds(-1.0))) *)
-
-                    let post =
-                        function
-                        | null -> ()
-                        | s ->
+                    try
+                        let stdOut s =
                             let message : Message =
                                 {
                                     Rev = None
                                     Date = Some (DateTime.UtcNow.ToString("o"))
                                     MessageType = "out"
-                                    SessionId = sessionId
+                                    SessionId = sessionName
                                     Message = s
                                     QueueStatus = None
                                 }
 
-                            //resetRecycleTimer ()
                             inbox.Post (StdOut message)
+    
+                        let recycle () =
+                            inbox.Post (Recycle id)
 
-                    //resetRecycleTimer ()
-                    proc.OutputDataReceived.Add <| fun args -> post args.Data
-                    proc.ErrorDataReceived.Add <| fun args -> post args.Data
-
-                    try
-                        ignore (proc.Start())
-
-                        proc.BeginErrorReadLine()
-                        proc.BeginOutputReadLine()
-
-                        let rev = TryFSharpDB.putSession this.BaseUri id { session with Rev = Some rev.Rev; FsiPid = Some (int64 proc.Id) }
+                        let proc = new FsiProcess(stdOut, recycle)
+                        proc.Start()
+                        let rev = TryFSharpDB.putSession this.BaseUri id { session with Rev = Some rev.Rev; FsiPid = Some (int64 proc.Process.Id) }
                         { this with OwnSessions = Map.add id (rev.Rev, proc) this.OwnSessions }, OwnSession proc
                     with ex ->
                         CouchDB.deleteDocument this.BaseUri id rev.Rev
                         this, ProcessFailed ex
 
                 | None ->
-                    this.ClaimSession inbox sessionId
+                    this.ClaimSession inbox sessionName
 
-    member private this.KillSession (id : string) (rev : string) (proc : Process) : App =
+    member private this.KillSession (id : string) (rev : string) (proc : FsiProcess) : App =
         try
             CouchDB.deleteDocument this.BaseUri id rev
         with _ -> ()
 
-        if not proc.HasExited then
-            try
-                proc.Kill()
-                ignore (proc.WaitForExit(5000))
-            with _ -> ()
-
-        proc.Dispose()
+        (proc :> IDisposable).Dispose()
         { this with OwnSessions = Map.remove id this.OwnSessions }
 
     member this.Run (inbox : MailboxProcessor<_>) : Async<unit> =
-        async {
-            let! message = inbox.Receive()
-            match message with
+        let run =
+            function
             | Exit reply ->
                 reply.Reply this
-                return ()
+                async { return () }
 
             | StdIn (id, message) ->
                 let app, claim = this.ClaimSession inbox message.SessionId
                 match claim with
-                | OtherSession otherServerId ->
-                    fprintfn Console.Error "Ignoring %s - owned by session %s on %s" id message.SessionId otherServerId
+                | OtherSession (host, pid) ->
+                    Log.info "Ignoring %s - owned by session %s on %s (pid %d)" id message.SessionId host pid
 
                 | OwnSession proc ->
                     let rev = TryFSharpDB.putMessage this.BaseUri id { message with QueueStatus = Some "done" }
                     let message = { message with Rev = Some rev.Rev }
-                    proc.StandardInput.WriteLine message.Message
+                    proc.Process.StandardInput.WriteLine message.Message
 
                 | ProcessFailed ex ->
-                    fprintfn Console.Error "%O" ex
+                    Log.info "%O" ex
 
-                return! app.Run inbox
+                app.Run inbox
 
             | StdOut message ->
                 ignore (TryFSharpDB.postMessage this.BaseUri message)
-                return! this.Run inbox
+                this.Run inbox
 
-            | Recycle (id, rev, proc) ->
-                let app = this.KillSession id rev proc
-                return! app.Run inbox
+            | Recycle id ->
+                let app =
+                    match Map.tryFind id this.OwnSessions with
+                    | Some (rev, proc) -> this.KillSession id rev proc
+                    | None -> this
+
+                app.Run inbox
+
+        async {
+            try
+                let! message = inbox.Receive()
+                return! run message
+            with ex ->
+                Log.info "%O" ex
+                return! this.Run inbox
         }
 
     interface IDisposable with
@@ -267,17 +234,21 @@ module Main =
             let subscribe =
                 let rec impl lastSeq =
                     async {
-                        let! lastSeq, (results : Change<Message> array) = CouchDB.changes baseUri (Some "app/stdin") lastSeq
-                        for result in results do
-                            let message =
-                                match result.Doc with
-                                | Some message -> message
-                                | None -> TryFSharpDB.getMessage baseUri result.Id
+                        try
+                            let! lastSeq, (results : Change<Message> array) = CouchDB.changes baseUri (Some "app/stdin") lastSeq
+                            for result in results do
+                                let message =
+                                    match result.Doc with
+                                    | Some message -> message
+                                    | None -> TryFSharpDB.getMessage baseUri result.Id
 
-                            if Option.isNone message.QueueStatus then
-                                mailbox.Post (StdIn (result.Id, message))
+                                if Option.isNone message.QueueStatus then
+                                    mailbox.Post (StdIn (result.Id, message))
 
-                        return! impl (Some lastSeq)
+                            return! impl (Some lastSeq)
+                        with ex ->
+                            Log.info "%O" ex
+                            return! impl None
                     }
 
                 impl None
@@ -291,5 +262,5 @@ module Main =
 
             0
         with ex ->
-            fprintfn Console.Error "%O" ex
+            Log.info "%O" ex
             1
