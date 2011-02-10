@@ -8,6 +8,11 @@ open System.Threading
 open System.Web
 open Newtonsoft.Json
 
+type DB =
+    {
+        [<JsonName("update_seq")>] UpdateSeq : int64
+    }
+
 type ChangeRev =
     {
         [<JsonName("rev")>] Rev : string
@@ -65,21 +70,21 @@ module CouchDB =
         }
 
     let get (uri : Uri) : 'a =
-        fprintfn Console.Error ">> get %O" uri
+        Log.info "get %O" uri
 
         let request = WebRequest.Create(uri)
         request.Method <- WebRequestMethods.Http.Get
         parseResponse request
 
     let getAsync (uri : Uri) : Async<'a> =
-        fprintfn Console.Error ">> get %O" uri
+        Log.info "get %O" uri
 
         let request = WebRequest.Create(uri)
         request.Method <- WebRequestMethods.Http.Get
         parseResponseAsync request
 
     let put (uri : Uri) (doc : 'a) : 'b =
-        fprintfn Console.Error ">> put %O" uri
+        Log.info "put %O" uri
 
         let request = WebRequest.Create(uri)
         request.Method <- WebRequestMethods.Http.Put
@@ -87,7 +92,7 @@ module CouchDB =
         parseResponse request
 
     let post (uri : Uri) (doc : 'a) : 'b =
-        fprintfn Console.Error ">> post %O" uri
+        Log.info "post %O" uri
 
         let request = WebRequest.Create(uri)
         request.Method <- WebRequestMethods.Http.Post
@@ -95,7 +100,7 @@ module CouchDB =
         parseResponse request
 
     let delete (uri : Uri) : unit =
-        fprintfn Console.Error ">> delete %O" uri
+        Log.info "delete %O" uri
 
         let request = WebRequest.Create(uri)
         request.Method <- "DELETE"
@@ -110,18 +115,22 @@ module CouchDB =
             | _ -> reraise ()
 
     let changes (baseUri : Uri) (filter : string option) (lastSeq : int64 option) : Async<int64 * Change<'a> array> =
+        let lastSeq =
+            match lastSeq with
+            | Some n -> n
+            | None ->
+                let db : DB = get baseUri
+                db.UpdateSeq
+                
         let query =
             seq {
                 yield "feed", "longpoll"
                 yield "heartbeat", "10000"
                 yield "include_docs", "true"
+                yield "since", (string lastSeq)
 
                 match filter with
                 | Some filter -> yield "filter", filter
-                | None -> ()
-
-                match lastSeq with
-                | Some lastSeq -> yield "since", (string lastSeq)
                 | None -> ()
             }
 
