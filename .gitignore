@@ -5,5 +5,7 @@
 *.user
 bin/
 couchdb/.couchapprc
+deploy/.couchapprc
+deploy/_attachments
 obj/
 
