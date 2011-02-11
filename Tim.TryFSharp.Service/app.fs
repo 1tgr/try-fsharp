@@ -33,17 +33,17 @@ module App =
         | OtherSession of string * int64
         | ProcessFailed of Exception
 
-    let claimSession (this : App) (inbox : MailboxProcessor<_>) (sessionName : string) : App * Claim =
+    let claimSession (app : App) (inbox : MailboxProcessor<_>) (sessionName : string) : App * Claim =
         let id = sprintf "session-%s" sessionName
 
         let rec impl () =
-            match TryFSharpDB.getSession this.BaseUri id with
+            match TryFSharpDB.getSession app.BaseUri id with
             | Some session ->
-                this, OtherSession(session.Host, session.ServicePid)
+                app, OtherSession(session.Host, session.ServicePid)
 
             | None ->
-                let session = { emptySession with Owner = this.OwnServerId }
-                match TryFSharpDB.safePutSession this.BaseUri id session with
+                let session = { emptySession with Owner = app.OwnServerId }
+                match TryFSharpDB.safePutSession app.BaseUri id session with
                 | Some rev ->
                     let session = { session with Rev = Some rev.Rev }
 
@@ -68,42 +68,42 @@ module App =
                         proc.Start()
 
                         let session = { session with FsiPid = Some (int64 proc.Process.Id) }
-                        let rev = TryFSharpDB.putSession this.BaseUri id session
-                        { this with OwnSessions = Map.add id (rev.Rev, proc) this.OwnSessions }, OwnSession proc
+                        let rev = TryFSharpDB.putSession app.BaseUri id session
+                        { app with OwnSessions = Map.add id (rev.Rev, proc) app.OwnSessions }, OwnSession proc
                     with ex ->
-                        CouchDB.deleteDocument this.BaseUri id rev.Rev
-                        this, ProcessFailed ex
+                        CouchDB.deleteDocument app.BaseUri id rev.Rev
+                        app, ProcessFailed ex
 
                 | None ->
                     impl ()
 
-        match Map.tryFind id this.OwnSessions with
-        | Some (_, proc) -> this, OwnSession proc
+        match Map.tryFind id app.OwnSessions with
+        | Some (_, proc) -> app, OwnSession proc
         | None -> impl ()
 
-    let killSession (this : App) (id : string) (rev : string) (proc : FsiProcess) : App =
+    let killSession (app : App) (id : string) (rev : string) (proc : FsiProcess) : App =
         try
-            CouchDB.deleteDocument this.BaseUri id rev
+            CouchDB.deleteDocument app.BaseUri id rev
         with _ -> ()
 
         (proc :> IDisposable).Dispose()
-        { this with OwnSessions = Map.remove id this.OwnSessions }
+        { app with OwnSessions = Map.remove id app.OwnSessions }
 
-    let rec run (this : App) (inbox : MailboxProcessor<_>) : Async<unit> =
+    let rec run (app : App) (inbox : MailboxProcessor<_>) : Async<unit> =
         let impl =
             function
             | Exit reply ->
-                reply.Reply this
+                reply.Reply app
                 async { return () }
 
             | StdIn (id, message) ->
-                let app, claim = claimSession this inbox message.SessionId
+                let app, claim = claimSession app inbox message.SessionId
                 match claim with
                 | OtherSession (host, pid) ->
                     Log.info "Ignoring %s - owned by session %s on %s (pid %d)" id message.SessionId host pid
 
                 | OwnSession proc ->
-                    let rev = TryFSharpDB.putMessage this.BaseUri id { message with QueueStatus = Some "done" }
+                    let rev = TryFSharpDB.putMessage app.BaseUri id { message with QueueStatus = Some "done" }
                     let message = { message with Rev = Some rev.Rev }
                     proc.Process.StandardInput.WriteLine message.Message
 
@@ -113,14 +113,14 @@ module App =
                 run app inbox
 
             | StdOut message ->
-                ignore (TryFSharpDB.postMessage this.BaseUri message)
-                run this inbox
+                ignore (TryFSharpDB.postMessage app.BaseUri message)
+                run app inbox
 
             | Recycle id ->
                 let app =
-                    match Map.tryFind id this.OwnSessions with
-                    | Some (rev, proc) -> killSession this id rev proc
-                    | None -> this
+                    match Map.tryFind id app.OwnSessions with
+                    | Some (rev, proc) -> killSession app id rev proc
+                    | None -> app
 
                 run app inbox
 
@@ -130,10 +130,10 @@ module App =
                 return! impl command
             with ex ->
                 Log.info "%O" ex
-                return! run this inbox
+                return! run app inbox
         }
 
-    let shutdown (this : App) =
-        (this, this.OwnSessions)
+    let shutdown (app : App) =
+        (app, app.OwnSessions)
         ||> Map.fold (fun app id (rev, proc) -> killSession app id rev proc)
 
