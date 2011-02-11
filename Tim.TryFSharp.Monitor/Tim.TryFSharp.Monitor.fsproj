@@ -5,12 +5,13 @@
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{6fe751ea-3126-4a75-bc77-daf43aa8274f}</ProjectGuid>
+    <ProjectGuid>{75d3b485-d16d-429c-ad5f-647fb78e25b7}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Tim.TryFSharp.Service</RootNamespace>
-    <AssemblyName>Tim.TryFSharp.Service</AssemblyName>
+    <RootNamespace>Tim.TryFSharp.Monitor</RootNamespace>
+    <AssemblyName>Tim.TryFSharp.Monitor</AssemblyName>
     <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <Name>Tim.TryFSharp.Service</Name>
+    <Name>Tim.TryFSharp.Monitor</Name>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -35,52 +36,13 @@
     <DocumentationFile>
     </DocumentationFile>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <Tailcalls>false</Tailcalls>
-    <OutputPath>..\deploy-debug\_attachments</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <WarningLevel>3</WarningLevel>
-    <DocumentationFile />
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <StartArguments>http://veneto:5984/tryfs/</StartArguments>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <Tailcalls>true</Tailcalls>
-    <OutputPath>..\deploy\_attachments</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <WarningLevel>3</WarningLevel>
-    <DocumentationFile />
-    <PlatformTarget>AnyCPU</PlatformTarget>
-  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Mono.Posix">
-      <HintPath>..\lib\mono.posix\4.0\Mono.Posix.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core">
       <HintPath>..\lib\fsharp\4.0\FSharp.Core.dll</HintPath>
     </Reference>
+    <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
-  </ItemGroup>
-  <ItemGroup>
-    <Compile Include="fsiProcess.fs" />
-    <Compile Include="tryFSharpDB.fs" />
-    <Compile Include="app.fs" />
-    <Compile Include="main.fs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Tim.TryFSharp.Core\Tim.TryFSharp.Core.fsproj">
-      <Name>Tim.TryFSharp.Core</Name>
-      <Project>{5d850e2f-6b96-4b22-9672-9507763e632d}</Project>
-      <Private>True</Private>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
   <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />

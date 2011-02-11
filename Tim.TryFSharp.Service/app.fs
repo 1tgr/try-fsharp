@@ -3,6 +3,7 @@
 open System
 open System.Diagnostics
 open System.Net
+open Tim.TryFSharp.Core
 
 type App =
     {

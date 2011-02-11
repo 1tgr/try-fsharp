@@ -1,4 +1,4 @@
-﻿namespace Tim.TryFSharp.Service
+﻿namespace Tim.TryFSharp.Core
 
 open System
 open System.IO

@@ -4,6 +4,7 @@ open System
 open System.Diagnostics
 open System.Threading
 open System.IO
+open Tim.TryFSharp.Core
 
 type FsiProcess(print : string -> unit, recycle : unit -> unit) =
     let proc =

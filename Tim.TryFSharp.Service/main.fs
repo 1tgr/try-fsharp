@@ -5,6 +5,7 @@ open System.Threading
 open System.Runtime.InteropServices
 open Mono.Unix
 open Mono.Unix.Native
+open Tim.TryFSharp.Core
 
 type ICtrlCHandler =
     inherit IDisposable

@@ -2,6 +2,7 @@
 
 open System
 open System.Net
+open Tim.TryFSharp.Core
 
 type Session =
     {
