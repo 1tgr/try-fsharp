@@ -20,9 +20,8 @@ function init() {
 
     function onChange(resp) {
       $.each(resp.results, function() {
-        if (this.doc.messageType == "out") {
-          console.commandResult(this.doc.message, "jquery-console-message-success");
-        }
+        var message = this.doc.message ? this.doc.message : "\n";
+        console.commandResult(message, "jquery-console-message-success");
       });
     }
 

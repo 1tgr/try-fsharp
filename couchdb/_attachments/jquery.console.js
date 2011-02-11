@@ -452,6 +452,10 @@
         ////////////////////////////////////////////////////////////////////////
         // Reset the prompt in invalid command
         extern.commandResult = function(msg,className) {
+            if (column <= 0) {
+                inner.children(".jquery-console-prompt-box").last().remove();
+            }
+
             column = -1;
             updatePromptDisplay();
             if (typeof msg == 'string') {
