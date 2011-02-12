@@ -7,5 +7,7 @@ bin/
 couchdb/.couchapprc
 deploy/.couchapprc
 deploy/_attachments
+deploy-debug/.couchapprc
+deploy-debug/_attachments
 obj/
 
