@@ -10,12 +10,14 @@ type App =
         OwnServerId : string
         BaseUri : Uri
         OwnSessions : Map<string, string * FsiProcess>
+        SlowStop : bool
     }
 
 type Command =
     | Exit of AsyncReplyChannel<App>
     | StdIn of string * Message
     | StdOut of Message
+    | SlowStop
     | Recycle of string
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -33,6 +35,7 @@ module App =
         | OwnSession of FsiProcess
         | OtherSession of string * int64
         | ProcessFailed of Exception
+        | SlowStopIgnore
 
     let claimSession (app : App) (inbox : MailboxProcessor<_>) (sessionName : string) : App * Claim =
         let id = sprintf "session-%s" sessionName
@@ -78,9 +81,10 @@ module App =
                 | None ->
                     impl ()
 
-        match Map.tryFind id app.OwnSessions with
-        | Some (_, proc) -> app, OwnSession proc
-        | None -> impl ()
+        match Map.tryFind id app.OwnSessions, app.SlowStop with
+        | Some (_, proc), _ -> app, OwnSession proc
+        | None, true -> app, SlowStopIgnore
+        | None, false -> impl ()
 
     let killSession (app : App) (id : string) (rev : string) (proc : FsiProcess) : App =
         try
@@ -111,11 +115,17 @@ module App =
                 | ProcessFailed ex ->
                     Log.info "%O" ex
 
+                | SlowStopIgnore ->
+                    Log.info "Ignoring %s - in slow stop mode" id
+
                 run app inbox
 
             | StdOut message ->
                 ignore (TryFSharpDB.postMessage app.BaseUri message)
                 run app inbox
+
+            | SlowStop ->
+                run { app with SlowStop = true } inbox
 
             | Recycle id ->
                 let app =

@@ -1,7 +1,8 @@
-﻿namespace Tim.TryFSharp.Service
+﻿namespace Tim.TryFSharp.Monitor
 
 open System
 open System.Threading
+open System.Reflection
 open System.Runtime.InteropServices
 open Mono.Unix
 open Mono.Unix.Native
@@ -51,43 +52,20 @@ module Main =
                 else
                     new WindowsCtrlCHandler() :> ICtrlCHandler
 
-            let mailbox =
-                let app : App =
-                    {
-                        OwnServerId = string (Guid.NewGuid())
-                        BaseUri = baseUri
-                        OwnSessions = Map.empty
-                    }
-
-                MailboxProcessor.Start (App.run app)
-
-            let subscribe =
-                let rec impl lastSeq =
-                    async {
-                        try
-                            let! lastSeq, (results : Change<Message> array) = CouchDB.changes baseUri (Some "app/stdin") lastSeq
-                            for result in results do
-                                let message =
-                                    match result.Doc with
-                                    | Some message -> message
-                                    | None -> TryFSharpDB.getMessage baseUri result.Id
-
-                                if Option.isNone message.QueueStatus then
-                                    mailbox.Post (StdIn (result.Id, message))
-
-                            return! impl (Some lastSeq)
-                        with ex ->
-                            Log.info "%O" ex
-                            return! impl None
-                    }
-
-                impl None
+            let config : ServiceConfig = { BaseUri = baseUri }
+            let s =
+                let a = Assembly.LoadFrom(string (Uri(baseUri, "_design/Tim.TryFSharp.Service/Tim.TryFSharp.Service.dll")))
+                [| for t in a.GetTypes() do
+                    if not t.IsAbstract && typeof<IService>.IsAssignableFrom(t) then
+                        let s : IService = unbox (Activator.CreateInstance(t))
+                        s.Start config
+                        yield s |]
 
             try
-                Async.Start subscribe
                 ignore (ctrlCHandler.WaitHandle.WaitOne())
             finally
-                ignore (App.shutdown (mailbox.PostAndReply Exit))
+                for s in s do
+                    s.Dispose()
 
             0
         with ex ->
