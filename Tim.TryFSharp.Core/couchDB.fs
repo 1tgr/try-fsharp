@@ -114,13 +114,15 @@ module CouchDB =
             | :? HttpWebResponse as response when response.StatusCode = HttpStatusCode.Conflict -> None
             | _ -> reraise ()
 
+    let updateSeq (baseUri : Uri) : int64 =
+        let db : DB = get baseUri
+        db.UpdateSeq
+
     let changes (baseUri : Uri) (filter : string option) (lastSeq : int64 option) : Async<int64 * Change<'a> array> =
         let lastSeq =
             match lastSeq with
             | Some n -> n
-            | None ->
-                let db : DB = get baseUri
-                db.UpdateSeq
+            | None -> updateSeq baseUri
                 
         let query =
             seq {
