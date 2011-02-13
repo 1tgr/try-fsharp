@@ -1,12 +1,31 @@
 ﻿namespace Tim.TryFSharp.Monitor
 
 open System
-open System.Threading
+open System.IO
+open System.Net
 open System.Reflection
 open System.Runtime.InteropServices
+open System.Threading
 open Mono.Unix
 open Mono.Unix.Native
 open Tim.TryFSharp.Core
+
+type Attachment =
+    {
+        [<JsonName("length")>] Length : int64
+    }
+
+type DesignDoc =
+    {
+        [<JsonName("_id")>]          Id : string
+        [<JsonName("_rev")>]         Rev : string
+        [<JsonName("_attachments")>] Attachments : Map<string, Attachment>
+        [<JsonName("launcher")>]     Launcher : string
+    }
+
+type Command =
+    | Exit of AsyncReplyChannel<unit>
+    | Load of DesignDoc
 
 type ICtrlCHandler =
     inherit IDisposable
@@ -53,19 +72,79 @@ module Main =
                     new WindowsCtrlCHandler() :> ICtrlCHandler
 
             let config : ServiceConfig = { BaseUri = baseUri }
-            let s =
-                let a = Assembly.LoadFrom(string (Uri(baseUri, "_design/Tim.TryFSharp.Service/Tim.TryFSharp.Service.dll")))
-                [| for t in a.GetTypes() do
-                    if not t.IsAbstract && typeof<IService>.IsAssignableFrom(t) then
-                        let s : IService = unbox (Activator.CreateInstance(t))
-                        s.Start config
-                        yield s |]
+
+            let mailbox =
+                let rec impl (state : (AppDomain * IService) option) (inbox : MailboxProcessor<Command>) =
+                    async {
+                        let! command = inbox.Receive()
+                        match command with
+                        | Exit r ->
+                            match state with
+                            | Some (_, service) -> service.Dispose()
+                            | None -> ()
+
+                            r.Reply ()
+                            return ()
+
+                        | Load doc ->
+                            match state with
+                            | Some (_, service) -> service.Dispose()
+                            | None -> ()
+
+                            let serviceName =
+                                match doc.Id.Split([| '/' |], 2) with
+                                | [| s; name |] when s = "_design" -> name
+                                | _ -> doc.Id
+
+                            let dir = Path.Combine(Path.GetTempPath(), serviceName, doc.Rev)
+                            ignore (Directory.CreateDirectory(dir))
+
+                            use client = new WebClient()
+                            for name, _ in Map.toSeq doc.Attachments do
+                                let uri = Uri(config.BaseUri, doc.Id + "/" + name)
+                                let filename = Path.Combine(dir, name)
+                                Log.info "download %O => %s" uri filename
+                                client.DownloadFile(uri, filename)
+
+                            let setup = AppDomainSetup()
+                            setup.ApplicationBase <- dir
+
+                            let ad = AppDomain.CreateDomain(serviceName, null, setup)
+                            let service : IService = unbox (ad.CreateInstanceAndUnwrap(serviceName, doc.Launcher))
+                            service.Start config
+                            return! impl (Some (ad, service)) inbox
+                    }
+
+                MailboxProcessor.Start (impl None)
+
+            let subscribe lastSeq =
+                let rec impl lastSeq =
+                    async {
+                        try
+                            let! lastSeq, (results : Change<DesignDoc> array) = CouchDB.changes baseUri (Some "app/deploy") lastSeq
+                            for result in results do
+                                mailbox.Post (Load (Option.get result.Doc))
+
+                            return! impl (Some lastSeq)
+                        with ex ->
+                            Log.info "%O" ex
+                            return! impl None
+                    }
+
+                impl (Some lastSeq)
+
+            let lastSeq = CouchDB.updateSeq baseUri
+
+            "_design/Tim.TryFSharp.Service"
+            |> CouchDB.getDocument baseUri
+            |> Load
+            |> mailbox.Post
 
             try
+                Async.Start (subscribe lastSeq)
                 ignore (ctrlCHandler.WaitHandle.WaitOne())
             finally
-                for s in s do
-                    s.Dispose()
+                mailbox.PostAndReply Exit
 
             0
         with ex ->
