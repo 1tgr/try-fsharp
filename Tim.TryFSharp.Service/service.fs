@@ -61,6 +61,8 @@ type ServiceState =
             ignore (App.shutdown (this.Mailbox.PostAndReply Exit))
 
 type Service() =
+    inherit MarshalByRefObject()
+
     [<DefaultValue>]
     val mutable state : ServiceState option
 
