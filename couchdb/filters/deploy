@@ -1,0 +1,3 @@
+function(doc, req) {
+  return doc._id == "_design/Tim.TryFSharp.Service";
+}
