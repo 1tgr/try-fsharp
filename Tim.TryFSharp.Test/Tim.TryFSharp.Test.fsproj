@@ -23,10 +23,6 @@
     <WarningLevel>3</WarningLevel>
     <DocumentationFile>
     </DocumentationFile>
-    <StartAction>Program</StartAction>
-    <StartProgram>D:\Data\Git\try-fsharp\lib\xunit\1.6.1\xunit.gui.exe</StartProgram>
-    <StartWorkingDirectory>D:\Data\Git\try-fsharp</StartWorkingDirectory>
-    <StartArguments>bin\Debug\Tim.TryFSharp.Test.dll</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -47,7 +43,7 @@
   <ItemGroup>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core">
-      <HintPath>..\lib\fsharp\4.0\FSharp.Core.dll</HintPath>
+      <HintPath>..\packages\FSharp.4.0\FSharp.Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

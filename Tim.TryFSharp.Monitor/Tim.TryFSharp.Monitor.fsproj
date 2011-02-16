@@ -45,10 +45,10 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Core">
-      <HintPath>..\lib\fsharp\4.0\FSharp.Core.dll</HintPath>
+      <HintPath>..\packages\FSharp.4.0\FSharp.Core.dll</HintPath>
     </Reference>
     <Reference Include="Mono.Posix">
-      <HintPath>..\lib\mono.posix\4.0\Mono.Posix.dll</HintPath>
+      <HintPath>..\packages\Mono.Posix.4.0\Mono.Posix.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="mscorlib" />
