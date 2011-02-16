@@ -73,49 +73,61 @@ module Main =
 
             let config : ServiceConfig = { BaseUri = baseUri }
 
-            let mailbox =
-                let rec impl (state : (AppDomain * IService) option) (inbox : MailboxProcessor<Command>) =
-                    async {
+            let rec run (state : (AppDomain * IService) option) (inbox : MailboxProcessor<Command>) =
+                let impl =
+                    function
+                    | Exit r ->
+                        match state with
+                        | Some (_, service) -> service.Dispose()
+                        | None -> ()
+
+                        r.Reply ()
+                        async { return () }
+
+                    | Load doc ->
+                        let serviceName =
+                            match doc.Id.Split([| '/' |], 2) with
+                            | [| s; name |] when s = "_design" -> name
+                            | _ -> doc.Id
+
+                        let typeName, assemblyName =
+                            match doc.Launcher.Split([| ',' |], 2) with
+                            | [| typeName; assemblyName |] -> typeName, assemblyName
+                            | _ -> doc.Launcher, serviceName
+
+                        let dir = Path.Combine(Path.GetTempPath(), serviceName, doc.Rev)
+                        ignore (Directory.CreateDirectory(dir))
+
+                        use client = new WebClient()
+                        for name, _ in Map.toSeq doc.Attachments do
+                            let uri = Uri(config.BaseUri, sprintf "%s/%s?rev=%s" doc.Id name doc.Rev)
+                            let filename = Path.Combine(dir, name)
+                            Log.info "download %O => %s" uri filename
+                            client.DownloadFile(uri, filename)
+
+                        let setup = AppDomainSetup()
+                        setup.ApplicationBase <- dir
+
+                        let ad = AppDomain.CreateDomain(serviceName + " " + doc.Rev, null, setup)
+                        let service : IService = unbox (ad.CreateInstanceAndUnwrap(assemblyName, typeName))
+                        service.Start config
+
+                        match state with
+                        | Some (_, service) -> service.Dispose()
+                        | None -> ()
+
+                        run (Some (ad, service)) inbox
+
+                async {
+                    try
                         let! command = inbox.Receive()
-                        match command with
-                        | Exit r ->
-                            match state with
-                            | Some (_, service) -> service.Dispose()
-                            | None -> ()
+                        return! impl command
+                    with ex ->
+                        Log.info "%O" ex
+                        return! run state inbox
+                }
 
-                            r.Reply ()
-                            return ()
-
-                        | Load doc ->
-                            match state with
-                            | Some (_, service) -> service.Dispose()
-                            | None -> ()
-
-                            let serviceName =
-                                match doc.Id.Split([| '/' |], 2) with
-                                | [| s; name |] when s = "_design" -> name
-                                | _ -> doc.Id
-
-                            let dir = Path.Combine(Path.GetTempPath(), serviceName, doc.Rev)
-                            ignore (Directory.CreateDirectory(dir))
-
-                            use client = new WebClient()
-                            for name, _ in Map.toSeq doc.Attachments do
-                                let uri = Uri(config.BaseUri, doc.Id + "/" + name)
-                                let filename = Path.Combine(dir, name)
-                                Log.info "download %O => %s" uri filename
-                                client.DownloadFile(uri, filename)
-
-                            let setup = AppDomainSetup()
-                            setup.ApplicationBase <- dir
-
-                            let ad = AppDomain.CreateDomain(serviceName, null, setup)
-                            let service : IService = unbox (ad.CreateInstanceAndUnwrap(serviceName, doc.Launcher))
-                            service.Start config
-                            return! impl (Some (ad, service)) inbox
-                    }
-
-                MailboxProcessor.Start (impl None)
+            let mailbox = MailboxProcessor.Start (run None)
 
             let subscribe lastSeq =
                 let rec impl lastSeq =
