@@ -60,25 +60,27 @@ type ServiceState =
             this.CancellationTokenSource.Dispose()
             ignore (App.shutdown (this.Mailbox.PostAndReply Exit))
 
-type Service() =
+type Launcher() =
     inherit MarshalByRefObject()
 
-    [<DefaultValue>]
-    val mutable state : ServiceState option
+    let mutable state : ServiceState option = None
+
+    override this.InitializeLifetimeService() =
+        null
 
     interface IService with
         member this.Start config =
-            this.state <- Some (ServiceState.Create config)
+            state <- Some (ServiceState.Create config)
 
         member this.SlowStop () =
-            match this.state with
+            match state with
             | Some state -> state.SlowStop()
             | None -> ()
 
     interface IDisposable with
         member this.Dispose() =
-            match this.state with
+            match state with
             | Some state -> (state :> IDisposable).Dispose()
             | None -> ()
 
-            this.state <- None
+            state <- None
