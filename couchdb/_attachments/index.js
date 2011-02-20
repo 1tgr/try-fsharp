@@ -1,3 +1,17 @@
+// Work around IE8 bug in XMLHttpRequest
+// http://bugs.jquery.com/ticket/6437
+$(function () {
+  $.ajaxSetup({
+    xhr: function() {
+      if ($.browser.msie) {
+        return new ActiveXObject("Microsoft.XMLHTTP");
+      } else {
+        return new XMLHttpRequest();
+      }
+    }
+  })
+});
+
 function init() {
     var sessionId;
     var db = $.couch.db("tryfs");
