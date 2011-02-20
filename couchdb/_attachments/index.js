@@ -25,8 +25,14 @@ function init() {
 
     function subscribe() {
         if (!sessionId) {
-            sessionId  = $.couch.newUUID();
-            db.changes(null, { filter: "app/session", include_docs: true, sessionId: sessionId }).onChange(onChange);
+            sessionId = $.couch.newUUID();
+            $.get(
+                "/tryfs/",
+                { },
+                function(info) {
+                    db.changes(info.update_seq, { filter: "app/session", include_docs: true, sessionId: sessionId }).onChange(onChange);
+                },
+                "json");
         }
     }
 
