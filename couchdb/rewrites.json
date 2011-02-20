@@ -1,1 +1,6 @@
-[ { "from": "tryfs/*", "to": "../../*" }, { "from": "/", "to": "index.html" }, { "from": "/*", "to": "*" } ]
+[
+    { "from": "tryfs/",  "to": "../../" },
+    { "from": "tryfs/*", "to": "../../*" },
+    { "from": "/",       "to": "index.html" },
+    { "from": "/*",      "to": "*" }
+]
