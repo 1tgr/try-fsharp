@@ -49,7 +49,7 @@ module App =
                 let session = { emptySession with Owner = app.OwnServerId }
                 match TryFSharpDB.safePutSession app.BaseUri id session with
                 | Some rev ->
-                    let session = { session with Rev = Some rev.Rev }
+                    let session = { session with Rev = rev.Rev }
 
                     try
                         let stdOut s =
@@ -73,9 +73,9 @@ module App =
 
                         let session = { session with FsiPid = Some (int64 proc.Process.Id) }
                         let rev = TryFSharpDB.putSession app.BaseUri id session
-                        { app with OwnSessions = Map.add id (rev.Rev, proc) app.OwnSessions }, OwnSession proc
+                        { app with OwnSessions = Map.add id (Option.get rev.Rev, proc) app.OwnSessions }, OwnSession proc
                     with ex ->
-                        CouchDB.deleteDocument app.BaseUri id rev.Rev
+                        CouchDB.deleteDocument app.BaseUri id (Option.get rev.Rev)
                         app, ProcessFailed ex
 
                 | None ->
@@ -109,7 +109,7 @@ module App =
 
                 | OwnSession proc ->
                     let rev = TryFSharpDB.putMessage app.BaseUri id { message with QueueStatus = Some "done" }
-                    let message = { message with Rev = Some rev.Rev }
+                    let message = { message with Rev = rev.Rev }
                     proc.Process.StandardInput.WriteLine message.Message
 
                 | ProcessFailed ex ->

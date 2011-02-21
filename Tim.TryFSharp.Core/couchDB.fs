@@ -35,7 +35,7 @@ type ChangesResponse<'a> =
 type SaveResponse =
     {
         [<JsonName("id")>]  Id  : string
-        [<JsonName("rev")>] Rev : string
+        [<JsonName("rev")>] Rev : string option
     }
 
 module CouchDB =
