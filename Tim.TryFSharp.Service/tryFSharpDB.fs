@@ -45,4 +45,4 @@ module TryFSharpDB =
         CouchDB.putDocument
     
     let postMessage : Uri -> Message -> SaveResponse =
-        CouchDB.postDocumentWith [| "batch", "ok" |]
+        CouchDB.postDocument
