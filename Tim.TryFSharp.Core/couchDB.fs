@@ -39,6 +39,22 @@ type SaveResponse =
     }
 
 module CouchDB =
+    let encodeOptions (options : seq<string * string>) : string =
+        (StringBuilder(), options)
+        ||> Seq.fold (fun sb (name, value) ->
+            let sb =
+                match sb.Length with
+                | 0 -> sb
+                | _ -> sb.Append("&")
+
+            sb.AppendFormat("{0}={1}", HttpUtility.UrlEncode(name), HttpUtility.UrlEncode(value)))
+        |> string
+
+    let appendOptions (options : seq<string * string>) (uri : Uri) : Uri =
+        let builder = UriBuilder(uri)
+        builder.Query <- encodeOptions options
+        builder.Uri
+
     let skipResponse (request : WebRequest) : unit =
         use response = request.GetResponse()
         use stream = response.GetResponseStream()
@@ -91,13 +107,17 @@ module CouchDB =
         writeRequest request doc
         parseResponse request
 
-    let post (uri : Uri) (doc : 'a) : 'b =
+    let postWith (options : seq<string * string>) (uri : Uri) (doc : 'a) : 'b =
+        let uri = appendOptions options uri
         Log.info "post %O" uri
 
         let request = WebRequest.Create(uri)
         request.Method <- WebRequestMethods.Http.Post
         writeRequest request doc
         parseResponse request
+
+    let post<'a, 'b> : Uri -> 'a -> 'b =
+        postWith Seq.empty
 
     let delete (uri : Uri) : unit =
         Log.info "delete %O" uri
@@ -137,17 +157,7 @@ module CouchDB =
             }
 
         let builder = UriBuilder(Uri(baseUri, "_changes"))
-
-        builder.Query <-
-            (StringBuilder(), query)
-            ||> Seq.fold (fun sb (name, value) ->
-                let sb =
-                    match sb.Length with
-                    | 0 -> sb
-                    | _ -> sb.Append("&")
-
-                sb.AppendFormat("{0}={1}", HttpUtility.UrlEncode(name), HttpUtility.UrlEncode(value)))
-            |> string
+        builder.Query <- encodeOptions query
 
         let rec impl retries : Async<ChangesResponse<'a>> =
             async {
@@ -172,8 +182,11 @@ module CouchDB =
     let putDocument (baseUri : Uri) (id : string) : 'a -> SaveResponse =
         put (Uri(baseUri, id))
 
-    let postDocument : Uri -> 'a -> SaveResponse =
+    let postDocument<'a> : Uri -> 'a -> SaveResponse =
         post
+
+    let postDocumentWith<'a> : seq<string * string> -> Uri -> 'a -> SaveResponse =
+        postWith
 
     let deleteDocument (baseUri : Uri) (id : string) (rev : string) : unit =
         let builder = UriBuilder(Uri(baseUri, id))
