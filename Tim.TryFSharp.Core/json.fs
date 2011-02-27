@@ -11,70 +11,47 @@ type JsonNameAttribute(name : string) =
     inherit Attribute()
     member this.Name = name
 
-type JsonType =
-    | Array of JsonSchema
-    | Dictionary of Map<string, JsonSchema>
-    | Map of JsonSchema
-    | Scalar of Type
-    | Token
-
-and JsonSchema =
+type JsonWrapper<'json, 'fsharp> =
     {
-        Type : JsonType
-        Reader : JToken -> obj
-        Writer : obj -> JToken
+        Pack : 'json -> 'fsharp
+        Unpack : 'fsharp -> 'json
     }
 
-type ISerializer =
-    abstract Read : JToken -> obj
-    abstract Write : obj -> JToken
+type JsonSchema =
+    | Array of JsonSchema * JsonWrapper<obj array, Array>
+    | Dictionary of (string * JsonSchema) array * JsonWrapper<obj array, obj>
+    | Map of JsonSchema * JsonWrapper<(string * obj) array, obj>
+    | Scalar of Type * JsonWrapper<obj, obj>
+    | Token
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module JsonSchema =
-    let ofDictionary<'a> (fields : (string * JsonSchema) array) (get : 'a -> obj array) (make : obj array -> 'a) : JsonSchema =
-        {
-            Type = Dictionary (Map.ofArray fields)
+    type IJsonWrapper<'json, 'fsharp> =
+        abstract Pack : 'json -> 'fsharp
+        abstract Unpack : 'fsharp -> 'json
 
-            Reader = fun (raw : JToken) ->
-                let dict : JObject = unbox raw
-                let values = Array.map (fun (name, schema) -> schema.Reader (dict.[name])) fields
-                box (make values)
+    type MapSerializer<'Value>() =
+        interface IJsonWrapper<(string * obj) array, obj> with
+            member this.Pack (fields : (string * obj) array) : obj =
+                fields
+                |> Map.ofArray
+                |> Map.map (fun _ -> unbox<'Value>)
+                |> box
 
-            Writer = fun (record : obj) ->
-                let dict = JObject()
-
-                (get (unbox record), fields)
-                ||> Array.iter2 (fun value (name, schema) ->
-                    let token = schema.Writer value
-                    if token <> null then
-                        dict.Add(name, token))
-
-                dict :> JToken
-        }
-
-    type MapSerializer<'Value>(schema : JsonSchema) =
-        interface ISerializer with
-            member this.Read (raw : JToken) : obj =
-                let dict : JObject = unbox raw
-                let map : Map<string, 'Value> =
-                    (Map.empty, dict.Properties())
-                    ||> Seq.fold (fun map prop ->
-                        let value : 'Value = unbox (schema.Reader prop.Value)
-                        Map.add prop.Name value map)
-
-                box map
-
-            member this.Write (map : obj) : JToken =
-                let map : Map<string, 'Value> = unbox map
-                let dict = JObject()
-                map |> Map.iter (fun name value -> dict.[name] <- schema.Writer (box value))
-                dict :> JToken
+            member this.Unpack (map : obj) : (string * obj) array =
+                map
+                |> unbox<Map<string, 'Value>>
+                |> Map.map (fun _ -> box)
+                |> Map.toArray
 
     let rec raw : Type -> JsonSchema =
         function
         | t when FSharpType.IsRecord t ->
-            let get = FSharpValue.PreComputeRecordReader t
-            let make = FSharpValue.PreComputeRecordConstructor t
+            let wrapper : JsonWrapper<obj array, obj> =
+                {
+                    Pack = FSharpValue.PreComputeRecordConstructor t
+                    Unpack = FSharpValue.PreComputeRecordReader t
+                }
 
             let fields =
                 [|
@@ -87,26 +64,23 @@ module JsonSchema =
                         name, raw field.PropertyType
                 |]
 
-            ofDictionary fields get make
+            Dictionary(fields, wrapper)
 
         | t when t.IsArray ->
             let t = t.GetElementType()
-            let schema = raw t
 
-            {
-                Type = Array schema
+            let wrapper : JsonWrapper<obj array, Array> =
+                {
+                    Pack = fun (values : obj array) ->
+                        let array : Array = Array.CreateInstance(t, Array.length values)
+                        Seq.iteri (fun i value -> array.SetValue(value, i)) values
+                        array
 
-                Reader = fun (raw : JToken) ->
-                    let array : JArray = unbox raw
-                    let values : Array = Array.CreateInstance(t, array.Count)
-                    Seq.iteri (fun i value -> values.SetValue(schema.Reader value, i)) array
-                    box values
+                    Unpack = fun (array : Array) ->
+                        Array.init array.Length (fun i -> array.GetValue(i))
+                }
 
-                Writer = fun (array : obj) ->
-                    let array : Array = unbox array
-                    let values = Array.init array.Length (fun i -> schema.Writer (array.GetValue(i)))
-                    JArray(values) :> JToken
-            }
+            Array(raw t, wrapper)
 
         | t when t.IsGenericType && t.GetGenericTypeDefinition() = typedefof<Map<_, _>> ->
             let schema, serializerType = 
@@ -117,51 +91,44 @@ module JsonSchema =
                 | _ ->
                     failwithf "Cannot serialize %s. Only string keys are supported." t.Name
 
-            let serializer : ISerializer = unbox (Activator.CreateInstance(serializerType, [| box schema |]))
-
-            {
-                Type = Map schema
-                Reader = serializer.Read
-                Writer = serializer.Write
-            }
+            let serializer : IJsonWrapper<(string * obj) array, obj> = unbox (Activator.CreateInstance(serializerType, [| box schema |]))
+            let wrapper : JsonWrapper<_, _> = { Pack = serializer.Pack; Unpack = serializer.Unpack }
+            Map(schema, wrapper)
 
         | t when t = typeof<JToken> ->
-            { Type = Token; Reader = box; Writer = unbox }
+            Token
 
         | t ->
-            {
-                Type = Scalar t
+            let wrapper : JsonWrapper<_, _> =
+                {
+                    Pack = fun (value : obj) -> Convert.ChangeType(value, t)
+                    Unpack = id
+                }
 
-                Reader = fun (raw : JToken) ->
-                    let value : JValue = unbox raw
-                    Convert.ChangeType(value.Value, t)
+            Scalar(t, wrapper)
 
-                Writer = fun (value : obj) ->
-                    JValue(value) :> JToken
-            }
+    let changeScalar (fn : Type -> JsonSchema option) : JsonSchema -> JsonSchema =
+        let mem = System.Collections.Generic.Dictionary<Type, JsonSchema option>()
 
-    let changeScalar (fn : Type -> JsonSchema -> JsonSchema) : JsonSchema -> JsonSchema =
-        let mem = System.Collections.Generic.Dictionary<Type, JsonSchema -> JsonSchema>()
+        let rec impl =
+            function
+            | Array(element, wrapper) -> Array(impl element, wrapper)
+            | Dictionary(fields, wrapper) -> Dictionary(Array.map (fun (name, field) -> name, impl field) fields, wrapper)
+            | Map(value, wrapper) -> Map(impl value, wrapper)
+            | Token -> Token
 
-        let rec impl (schema : JsonSchema) =
-            match schema.Type with
-            | Array element -> { schema with Type = Array (impl element) }
-            | Dictionary fields -> { schema with Type = Dictionary (Map.map (fun _ -> impl) fields) }
-            | Map value -> { schema with Type = Map (impl value) }
-            | Token -> schema
-
-            | Scalar t ->
-                let schemaFn =
+            | Scalar(t, wrapper) as schema ->
+                let opt =
                     match mem.TryGetValue t with
-                    | (true, schemaFn) ->
-                        schemaFn
+                    | (true, schema) ->
+                        schema
 
                     | (false, _) ->
-                        let schemaFn = fn t
-                        mem.[t] <- schemaFn
-                        schemaFn
+                        let schema = fn t
+                        mem.[t] <- schema
+                        schema
 
-                schemaFn schema
+                defaultArg opt schema
 
         impl
 
@@ -193,28 +160,25 @@ module JsonSchema =
                         fun union -> let values = reader union in values.[0]
 
                     let t = field.PropertyType
-                    let schema = raw t
-                    let schema =
-                        {
-                            Type = Scalar t
 
-                            Reader =
+                    let wrapper : JsonWrapper<obj, obj>=
+                        {
+                            Pack =
                                 function
                                 | null -> makeNull ()
-                                | :? JValue as raw when raw.Value = null -> makeNull ()
-                                | raw -> raw |> schema.Reader |> makeNotNull
+                                | raw -> makeNotNull (Convert.ChangeType(raw, t))
 
-                            Writer = fun (union : obj) ->
+                            Unpack = fun (union : obj) ->
                                 match getTag union with
                                 | tag when tag = nullCase.Tag -> null
-                                | tag when tag = notNullCase.Tag -> union |> getNotNull |> schema.Writer
+                                | tag when tag = notNullCase.Tag -> getNotNull union
                                 | tag -> failwithf "Didn't expect tag %d for F# union %s" tag t.Name
                         }
 
-                    fun _ -> schema
+                    Some (Scalar(t, wrapper))
 
-                | _ -> id
-            | _ -> id
+                | _ -> None
+            | _ -> None
 
     let withUnion : JsonSchema -> JsonSchema =
         changeScalar <|
@@ -231,31 +195,37 @@ module JsonSchema =
 
                 let getTag = FSharpValue.PreComputeUnionTagReader t
 
-                let get (union : obj) : obj array =
-                    let tag = getTag union
-                    let schemas, get, _ = cases.[tag]
-                    let values = get union
-                    let tokens = (schemas, values) ||> Array.map2 (fun schema -> schema.Writer)
-                    [| tag; JArray(tokens) |]
+                let wrapper : JsonWrapper<obj array, obj> =
+                    {
+                        Pack =
+                            function
+                            | [| :? int as tag; :? JArray as tokens |] ->
+                                let tokens : JToken array = Array.ofSeq tokens
+                                let schemas, _, make = cases.[tag]
+                                let values = (schemas, tokens) ||> Array.map2 (fun schema -> schema.Reader)
+                                make values
 
-                let make : obj array -> obj =
-                    function
-                    | [| :? int as tag; :? JArray as tokens |] ->
-                        let tokens : JToken array = Array.ofSeq tokens
-                        let schemas, _, make = cases.[tag]
-                        let values = (schemas, tokens) ||> Array.map2 (fun schema -> schema.Reader)
-                        make values
+                            | a -> failwithf "Expected [int, array], not %A" a
 
-                    | a -> failwithf "Expected [int, array], not %A" a
+                        Unpack = fun (union : obj) ->
+                            let tag = getTag union
+                            let schemas, get, _ = cases.[tag]
+                            let values = get union
+                            let tokens = (schemas, values) ||> Array.map2 (fun schema -> schema.Writer)
+                            [| tag; JArray(tokens) |]
+                    }
 
-                let schema = ofDictionary [| "Tag", raw typeof<int>; "Value", raw typeof<JToken>|] get make
-                fun _ -> schema
-            | _ -> id
+                Some (Dictionary([| "Tag", raw typeof<int>; "Value", raw typeof<JToken>|], wrapper))
+            | _ -> None
 
     let ofType : Type -> JsonSchema =
         raw >> withOption >> withUnion
 
 module Json =
+    type ISerializer =
+        abstract Read : JToken -> obj
+        abstract Write : obj -> JToken
+
     type MapSerializer<'Value>() =
         let valueReader, valueWriter = Serializer.Create typeof<'Value>
 
