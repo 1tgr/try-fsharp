@@ -6,7 +6,18 @@ open System.Threading
 open System.IO
 open Tim.TryFSharp.Core
 
-type FsiProcess(print : string -> unit, recycle : unit -> unit) =
+type FsiProcessInfo =
+    {
+        Name : string
+        InitTexts : (string * string) array
+        Print : string -> unit
+        Recycle : unit -> unit
+    }
+
+type FsiProcess(info : FsiProcessInfo) =
+    let path = sprintf "%s\\%s" (Path.GetTempPath())
+    
+
     let proc =
         let programFiles =
             match Environment.GetEnvironmentVariable("ProgramFiles(x86)") with
@@ -22,7 +33,7 @@ type FsiProcess(print : string -> unit, recycle : unit -> unit) =
             else
                 "fsi"
 
-        startInfo.WorkingDirectory <- Path.GetTempPath()
+        startInfo.WorkingDirectory <- path
         startInfo.RedirectStandardError <- true
         startInfo.RedirectStandardInput <- true
         startInfo.RedirectStandardOutput <- true
@@ -38,7 +49,7 @@ type FsiProcess(print : string -> unit, recycle : unit -> unit) =
     val mutable timer : Timer option
 
     member this.ResetRecycleTimer () =
-        let callback _ = recycle ()
+        let callback _ = info.Recycle ()
 
         lock syncRoot <| fun _ ->
             match this.timer with
@@ -51,7 +62,7 @@ type FsiProcess(print : string -> unit, recycle : unit -> unit) =
         let post (args : DataReceivedEventArgs) =
             if args.Data <> null then
                 this.ResetRecycleTimer()
-                print args.Data
+                info.Print args.Data
 
         this.ResetRecycleTimer()
         proc.OutputDataReceived.Add post

@@ -24,19 +24,14 @@ type Message =
     }
 
 module TryFSharpDB =
-    let getSession (baseUri : Uri) (id : string) : Session option =
-        try
-            Some (CouchDB.getDocument baseUri id)
-        with :? WebException as ex ->
-            match ex.Response with
-            | :? HttpWebResponse as response when response.StatusCode = HttpStatusCode.NotFound -> None
-            | _ -> reraise ()
+    let getSession (baseUri : Uri) : string -> Session option =
+        CouchDB.notFound (CouchDB.getDocument baseUri)
 
     let putSession : Uri -> string -> Session -> SaveResponse =
         CouchDB.putDocument
 
-    let safePutSession (baseUri : Uri) (id : string) (session : Session) : SaveResponse option =
-        CouchDB.conflicted (putSession baseUri id) session
+    let safePutSession (baseUri : Uri) (id : string) : Session -> SaveResponse option =
+        CouchDB.conflicted (putSession baseUri id)
 
     let getMessage : Uri -> string -> Message =
         CouchDB.getDocument

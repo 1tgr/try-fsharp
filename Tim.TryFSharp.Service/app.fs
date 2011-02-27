@@ -52,23 +52,28 @@ module App =
                     let session = { session with Rev = rev.Rev }
 
                     try
-                        let stdOut s =
-                            let message : Message =
-                                {
-                                    Rev = None
-                                    Date = Some (DateTime.UtcNow.ToString("o"))
-                                    MessageType = "out"
-                                    SessionId = sessionName
-                                    Message = s
-                                    QueueStatus = None
-                                }
+                        let info : FsiProcessInfo =
+                            {
+                                Name = sessionname
+                                InitText = None
 
-                            inbox.Post (StdOut message)
+                                Print = fun s ->
+                                    let message : Message =
+                                        {
+                                            Rev = None
+                                            Date = Some (DateTime.UtcNow.ToString("o"))
+                                            MessageType = "out"
+                                            SessionId = sessionName
+                                            Message = s
+                                            QueueStatus = None
+                                        }
+
+                                    inbox.Post (StdOut message)
     
-                        let recycle () =
-                            inbox.Post (Recycle id)
+                                Recycle = fun () -> inbox.Post (Recycle id)
+                            }
 
-                        let proc = new FsiProcess(stdOut, recycle)
+                        let proc = new FsiProcess(info)
                         proc.Start()
 
                         let session = { session with FsiPid = Some (int64 proc.Process.Id) }

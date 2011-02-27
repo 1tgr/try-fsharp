@@ -1,6 +1,7 @@
 ﻿namespace Tim.TryFSharp.Core
 
 open System
+open System.Globalization
 open Microsoft.FSharp.Reflection
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
@@ -144,6 +145,20 @@ module Json =
 
                 let serializer : ISerializer = unbox (Activator.CreateInstance(serializerType))
                 serializer.Read, serializer.Write
+
+            | t when t = typeof<DateTime> ->
+                let reader (raw : JToken) : obj =
+                    let value : JValue = unbox raw
+                    let value : string = unbox value.Value
+                    let date = DateTime.ParseExact(value, "s", CultureInfo.InvariantCulture)
+                    box date
+
+                let writer (value : obj) : JToken =
+                    let date : DateTime = unbox value
+                    let s = date.ToString("s", CultureInfo.InvariantCulture)
+                    JValue(s) :> JToken
+
+                reader, writer
 
             | t when t = typeof<bool> || t = typeof<int> || t = typeof<int64> || t = typeof<string> ->
                 let reader (raw : JToken) : obj =
