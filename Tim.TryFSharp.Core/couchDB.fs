@@ -134,6 +134,14 @@ module CouchDB =
             | :? HttpWebResponse as response when response.StatusCode = HttpStatusCode.Conflict -> None
             | _ -> reraise ()
 
+    let notFound (fn : 'a -> 'b) (a : 'a) : 'b option =
+        try
+            Some (fn a)
+        with :? WebException as ex ->
+            match ex.Response with
+            | :? HttpWebResponse as response when response.StatusCode = HttpStatusCode.NotFound -> None
+            | _ -> reraise ()
+
     let updateSeq (baseUri : Uri) : int64 =
         let db : DB = get baseUri
         db.UpdateSeq
