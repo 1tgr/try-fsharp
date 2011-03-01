@@ -1,6 +1,8 @@
 [
-    { "from": "tryfs/",  "to": "../../" },
-    { "from": "tryfs/*", "to": "../../*" },
-    { "from": "/",       "to": "index.html" },
-    { "from": "/*",      "to": "*" }
+    { "from": "tryfs/",      "to": "../../" },
+    { "from": "tryfs/*",     "to": "../../*" },
+    { "from": "snippet/*",   "to": "_show/snippet/*" }, 
+    { "from": "/",           "to": "_show/index" },
+    { "from": "/index.html", "to": "_show/index" },
+    { "from": "/*",          "to": "*" }
 ]

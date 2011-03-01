@@ -778,8 +778,7 @@ a:hover {
     padding-left: 0;
 }
 
-#content { 
-    margin-top: 20px;  
+#content, #fsi { 
     margin-bottom: 20px;  
 }
 
