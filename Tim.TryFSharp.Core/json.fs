@@ -118,15 +118,19 @@ module Json =
                 let reader, writer = Serializer.Create t
 
                 let reader (raw : JToken) : obj =
-                    let array : JArray = unbox raw
-                    let values : Array = Array.CreateInstance(t, array.Count)
+                    match raw with
+                    | null -> box (Array.CreateInstance(t, 0))
+                    | :? JArray as array ->
+                        let values : Array = Array.CreateInstance(t, array.Count)
 
-                    let mutable i = 0
-                    for value in array do
-                        values.SetValue(reader value, i)
-                        i <- i + 1
+                        let mutable i = 0
+                        for value in array do
+                            values.SetValue(reader value, i)
+                            i <- i + 1
 
-                    box values
+                        box values
+
+                    | a -> failwithf "expected array, got %A" a
 
                 let writer (array : obj) : JToken =
                     let values = Array.map writer (unbox array)

@@ -29,6 +29,8 @@ module App =
             Host = Dns.GetHostName()
             ServicePid = int64 (Process.GetCurrentProcess().Id)
             FsiPid = None
+            InitNames = [| |]
+            InitTexts = [| |]
         }
 
     type Claim =
@@ -42,11 +44,15 @@ module App =
 
         let rec impl () =
             match TryFSharpDB.getSession app.BaseUri id with
-            | Some session ->
+            | Some session when session.Owner <> app.OwnServerId ->
                 app, OtherSession(session.Host, session.ServicePid)
 
-            | None ->
-                let session = { emptySession with Owner = app.OwnServerId }
+            | s ->
+                let session =
+                    match s with
+                    | Some session -> session
+                    | None -> { emptySession with Owner = app.OwnServerId }
+
                 match TryFSharpDB.safePutSession app.BaseUri id session with
                 | Some rev ->
                     let session = { session with Rev = rev.Rev }
@@ -55,7 +61,7 @@ module App =
                         let info : FsiProcessInfo =
                             {
                                 Name = sessionName
-                                InitTexts = Array.empty
+                                InitTexts = Array.zip session.InitNames session.InitTexts
 
                                 Print = fun s ->
                                     let message : Message =

@@ -11,6 +11,8 @@ type Session =
         [<JsonName("host")>]       Host       : string
         [<JsonName("servicePid")>] ServicePid : int64
         [<JsonName("fsiPid")>]     FsiPid     : int64 option
+        [<JsonName("initNames")>]  InitNames   : string array
+        [<JsonName("initTexts")>]  InitTexts   : string array
     }
 
 type Message =
