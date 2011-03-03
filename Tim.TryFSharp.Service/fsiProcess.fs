@@ -67,7 +67,7 @@ type FsiProcess(info : FsiProcessInfo) =
         proc.OutputDataReceived.Add post
         proc.ErrorDataReceived.Add post
 
-        ignore (Directory.CreateDirectory)
+        ignore (Directory.CreateDirectory path)
         for name, text in info.InitTexts do
             let filename = Path.Combine(path, sprintf "%s.fsx" name)
             File.WriteAllText(filename, text)
