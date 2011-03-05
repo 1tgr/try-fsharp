@@ -26,6 +26,18 @@ type Message =
         [<JsonName("queueStatus")>] QueueStatus : string option
     }
 
+type Snippet =
+    {
+        [<JsonName("_rev")>] Rev : string option
+        [<JsonName("type")>] Type : string
+        [<JsonName("title")>] Title : string
+        [<JsonName("date")>] Date : DateTime
+        [<JsonName("author")>] Author : string
+        [<JsonName("description")>] Description : string
+        [<JsonName("link")>] Link: string option
+        [<JsonName("code")>] Code : string
+    }
+
 module TryFSharpDB =
     let getSession (baseUri : Uri) : string -> Session option =
         CouchDB.notFound (CouchDB.getDocument baseUri)

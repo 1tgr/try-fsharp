@@ -2,7 +2,10 @@
 
 open System
 open System.Diagnostics
+open System.Globalization
+open System.IO
 open System.Net
+open System.Xml.XPath
 open Tim.TryFSharp.Core
 
 type App =
@@ -15,10 +18,11 @@ type App =
 
 type Command =
     | Exit of AsyncReplyChannel<App>
+    | Recycle of string
+    | RefreshFeeds
+    | SlowStop
     | StdIn of string * Message
     | StdOut of Message
-    | SlowStop
-    | Recycle of string
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module App =
@@ -105,12 +109,76 @@ module App =
         (proc :> IDisposable).Dispose()
         { app with OwnSessions = Map.remove id app.OwnSessions }
 
+    let refreshFeedsAsync (app : App) : Async<unit> =
+        let select (nav : XPathNavigator) (xpath : string) : 'a =
+            let child = nav.SelectSingleNode(xpath)
+            unbox (child.ValueAs(typeof<'a>))
+
+        async {
+            use client = new WebClient()
+            let! rss = client.AsyncDownloadString(Uri("http://fssnip.net/pages/Rss"))
+            let doc = using (new StringReader(rss)) (fun reader -> (XPathDocument(reader)).CreateNavigator())
+            let items : seq<XPathNavigator> = Seq.cast (doc.Select("/rss/channel/item"))
+
+            for item in items do
+                try
+                    let link : string = select item "link"
+                    let builder = UriBuilder(link)
+                    let id = sprintf "snippet-%s" (builder.Path.Substring(1))
+                    builder.Path <- "/raw" + builder.Path
+
+                    let! code = client.AsyncDownloadString(builder.Uri)
+
+                    let oldSnippet : Snippet option = CouchDB.notFound (CouchDB.getDocument app.BaseUri) id
+
+                    let newSnippet : Snippet =
+                        {
+                            Rev =
+                                match oldSnippet with
+                                | Some snippet -> snippet.Rev
+                                | None -> None
+
+                            Type = "snippet"
+                            Title = select item "title"
+                            Date = DateTime.Parse(select item "pubDate", CultureInfo.InvariantCulture)
+                            Author = select item "author"
+                            Description = select item "description"
+                            Link = Some (select item "link")
+                            Code = code
+                        }
+
+                    let changed =
+                        match oldSnippet with
+                        | Some oldSnippet -> oldSnippet <> newSnippet
+                        | None -> true
+
+                    if changed then
+                        ignore (CouchDB.putDocument app.BaseUri id newSnippet)
+                with ex ->
+                    Log.info "Failed to import RSS item. %O" ex
+        }
+
     let rec run (app : App) (inbox : MailboxProcessor<_>) : Async<unit> =
         let impl =
             function
             | Exit reply ->
                 reply.Reply app
                 async { return () }
+
+            | Recycle id ->
+                let app =
+                    match Map.tryFind id app.OwnSessions with
+                    | Some (rev, proc) -> killSession app id rev proc
+                    | None -> app
+
+                run app inbox
+
+            | RefreshFeeds ->
+                Async.Start (refreshFeedsAsync app)
+                run app inbox
+
+            | SlowStop ->
+                run { app with SlowStop = true } inbox
 
             | StdIn (id, message) ->
                 let app, claim = claimSession app inbox message.SessionId
@@ -133,17 +201,6 @@ module App =
 
             | StdOut message ->
                 ignore (TryFSharpDB.postMessage app.BaseUri message)
-                run app inbox
-
-            | SlowStop ->
-                run { app with SlowStop = true } inbox
-
-            | Recycle id ->
-                let app =
-                    match Map.tryFind id app.OwnSessions with
-                    | Some (rev, proc) -> killSession app id rev proc
-                    | None -> app
-
                 run app inbox
 
         async {

@@ -8,8 +8,11 @@ type ServiceState =
     {
         Mailbox : MailboxProcessor<Command>
         CancellationTokenSource : CancellationTokenSource
+        RefreshFeedsTimer : Timer
     } with
     static member Create (config : ServiceConfig) =
+        let cts = new CancellationTokenSource()
+
         let mailbox =
             let app : App =
                 {
@@ -19,7 +22,7 @@ type ServiceState =
                     SlowStop = false
                 }
 
-            MailboxProcessor.Start (App.run app)
+            MailboxProcessor.Start(App.run app, cts.Token)
 
         let subscribe =
             let rec impl lastSeq =
@@ -43,12 +46,19 @@ type ServiceState =
 
             impl None
 
-        let cts = new CancellationTokenSource()
         Async.Start(subscribe, cts.Token)
+
+        let timer =
+            new Timer(
+                TimerCallback(fun _ -> mailbox.Post RefreshFeeds),
+                null,
+                TimeSpan.FromTicks(0L),
+                TimeSpan.FromMinutes(10.0))
 
         {
             Mailbox = mailbox
             CancellationTokenSource = cts
+            RefreshFeedsTimer = timer
         }
 
     member this.SlowStop () =
@@ -56,9 +66,10 @@ type ServiceState =
 
     interface IDisposable with
         member this.Dispose() =
+            ignore (App.shutdown (this.Mailbox.PostAndReply Exit))
+            this.RefreshFeedsTimer.Dispose()
             this.CancellationTokenSource.Cancel()
             this.CancellationTokenSource.Dispose()
-            ignore (App.shutdown (this.Mailbox.PostAndReply Exit))
 
 type Launcher() =
     inherit MarshalByRefObject()
