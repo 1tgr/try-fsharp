@@ -13,7 +13,7 @@ $(function () {
 });
 
 function init() {
-    var sessionId;
+    var subscription;
     var db = $.couch.db("tryfs");
 
     function onChange(resp) {
@@ -24,37 +24,46 @@ function init() {
     }
 
     function subscribe(success) {
-        if (sessionId) {
-            success(sessionId);
+        if (subscription) {
+            success(subscription.session);
         } else {
-            var session = {
-                type: "session",
-                initNames: [ "init" ],
-                initTexts: [ "printfn \"hello\"" ]
+            subscription = {
+                session: {
+                    type: "session",
+                    initNames: [ "init" ],
+                    initTexts: [ $("#code").val() ]
+                }
             };
             
-            db.saveDoc(
-                session,
-                {
-                    success: function(resp) {
-                        sessionId = resp.id;
-                        $.get(
-                            "/tryfs/",
-                            { },
-                            function(info) {
-                                db.changes(info.update_seq, { filter: "app/session", include_docs: true, sessionId: sessionId }).onChange(onChange);
-                            },
-                            "json");
+            $.get(
+                "/tryfs/",
+                { },
+                function(info) {
+                    db.saveDoc(
+                        subscription.session,
+                        {
+                            success: function(resp) {
+                                subscription.session = resp;
 
-                        success(sessionId);
-                    }
-                });
+                                var options ={
+                                    filter: "app/session",
+                                    include_docs: true,
+                                    sessionId: subscription.session.id
+                                };
+
+                                subscription.promise = db.changes(info.update_seq, options);
+                                subscription.promise.onChange(onChange);
+                                success(subscription.session);
+                            }
+                        });
+                    },
+                "json");
         }
     }
 
     function commandHandle(code) {
-        subscribe(function(sessionId) {
-            db.saveDoc({ messageType: "in", message: code, sessionId: sessionId });
+        subscribe(function(session) {
+            db.saveDoc({ messageType: "in", message: code, sessionId: session.id });
         });
         
         return true;
@@ -66,10 +75,14 @@ function init() {
     });
 
     function onSend() {
-        var code = $("#code").val() + ";;";
-        subscribe(function(sessionId) {
-            db.saveDoc({ messageType: "in", message: code, sessionId: sessionId });
-            console.commandResult(code, "jquery-console-message-success");
+        if (subscription) {
+            subscription.promise.stop();
+            subscription = null;
+            console.reset();
+        }
+
+        subscribe(function(session) { 
+            db.saveDoc({ messageType: "in", message: "", sessionId: session.id });
         });
     }
 
