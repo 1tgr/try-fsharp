@@ -66,28 +66,18 @@ type FsiProcess(info : FsiProcessInfo) =
         proc.StartInfo <- startInfo
         proc
 
-    let syncRoot = obj()
+    let recycleTimer = new Timer(TimerCallback(fun _ -> info.Recycle ()))
 
-    [<DefaultValue>]
-    val mutable timer : Timer option
+    let resetRecycleTimer () =
+        ignore (recycleTimer.Change(dueTime = TimeSpan.FromMinutes(10.0), period = TimeSpan.FromMilliseconds(-1.0)))
 
-    member this.ResetRecycleTimer () =
-        let callback _ = info.Recycle ()
+    let post (args : DataReceivedEventArgs) =
+        if args.Data <> null then
+            resetRecycleTimer()
+            info.Print args.Data
 
-        lock syncRoot <| fun _ ->
-            match this.timer with
-            | Some timer -> timer.Dispose()
-            | None -> ()
-
-        this.timer <- Some (new Timer(TimerCallback(callback), null, TimeSpan.FromMinutes(10.0), TimeSpan.FromMilliseconds(-1.0)))
-
-    member this.Start() =
-        let post (args : DataReceivedEventArgs) =
-            if args.Data <> null then
-                this.ResetRecycleTimer()
-                info.Print args.Data
-
-        this.ResetRecycleTimer()
+    do
+        resetRecycleTimer ()
         proc.OutputDataReceived.Add post
         proc.ErrorDataReceived.Add post
 
@@ -119,8 +109,4 @@ type FsiProcess(info : FsiProcessInfo) =
                 Log.info "Fsi process %d has not exited" proc.Id
 
             proc.Dispose()
-
-            lock syncRoot <| fun _ ->
-                match this.timer with
-                | Some timer -> timer.Dispose()
-                | None -> ()
+            recycleTimer.Dispose()

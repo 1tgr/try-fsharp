@@ -83,8 +83,6 @@ module App =
                             }
 
                         let proc = new FsiProcess(info)
-                        proc.Start()
-
                         let session = { session with FsiPid = Some (int64 proc.Process.Id) }
                         let rev = TryFSharpDB.putSession app.BaseUri id session
                         { app with OwnSessions = Map.add id (Option.get rev.Rev, proc) app.OwnSessions }, OwnSession proc
