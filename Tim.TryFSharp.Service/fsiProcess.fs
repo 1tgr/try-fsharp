@@ -52,7 +52,7 @@ type FsiProcess(info : FsiProcessInfo) =
                     else
                         sb
 
-                Printf.bprintf sb "--load:%s" name
+                Printf.bprintf sb "--use:%s" name
                 sb)
             |> string
 
