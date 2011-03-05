@@ -1,19 +1,32 @@
 function(newDoc, oldDoc, userCtx) {
+    function require(names) {
+        for (i in names) {
+            var name = names[i];
+            if (newDoc[name] === undefined) {
+                throw { forbidden: name + " must be set" };
+            }
+        }
+    }
+
     if (newDoc.type == "session") {
         if ((newDoc.initNames || []).length != (newDoc.initTexts || []).length) {
             throw { forbidden: "initNames and initTexts must have the same length" };
         }
+    } else if (newDoc.type == "snippet") {
+        require([
+            "title",
+            "date",
+            "author",
+            "description",
+            "code" ]);
     } else if (newDoc.type) {
         throw { forbidden: "unrecognised type" };
     } else {
         if (newDoc.messageType == "in") {
-            if (newDoc.sessionId === undefined) {
-                throw { forbidden: "sessionId must be set" };
-            }
-
-            if (newDoc.message === undefined) {
-                throw { forbidden: "message must be set" };
-            }
+            require([
+                "sessionId",
+                "message"
+            ]);
         } else if (newDoc.messageType == "out") {
         } else if (newDoc.messageType) {
             throw { forbidden: "unrecognised messageType" };
