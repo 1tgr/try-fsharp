@@ -7,6 +7,7 @@ open Tim.TryFSharp.Core
 type Session =
     {
         [<JsonName("_rev")>]       Rev        : string option
+        [<JsonName("type")>]       Type       : string
         [<JsonName("owner")>]      Owner      : string option
         [<JsonName("host")>]       Host       : string option
         [<JsonName("servicePid")>] ServicePid : int64 option

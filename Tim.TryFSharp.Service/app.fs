@@ -25,6 +25,7 @@ module App =
     let emptySession : Session =
         { 
             Rev = None
+            Type = "session"
             Owner = None
             Host = Some (Dns.GetHostName())
             ServicePid = Some (int64 (Process.GetCurrentProcess().Id))
