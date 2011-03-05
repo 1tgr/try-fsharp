@@ -28,6 +28,7 @@ function init() {
             success(sessionId);
         } else {
             var session = {
+                type: "session",
                 initNames: [ "init" ],
                 initTexts: [ "printfn \"hello\"" ]
             };
