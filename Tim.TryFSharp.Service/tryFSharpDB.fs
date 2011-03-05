@@ -7,12 +7,12 @@ open Tim.TryFSharp.Core
 type Session =
     {
         [<JsonName("_rev")>]       Rev        : string option
-        [<JsonName("owner")>]      Owner      : string
-        [<JsonName("host")>]       Host       : string
-        [<JsonName("servicePid")>] ServicePid : int64
+        [<JsonName("owner")>]      Owner      : string option
+        [<JsonName("host")>]       Host       : string option
+        [<JsonName("servicePid")>] ServicePid : int64 option
         [<JsonName("fsiPid")>]     FsiPid     : int64 option
-        [<JsonName("initNames")>]  InitNames   : string array
-        [<JsonName("initTexts")>]  InitTexts   : string array
+        [<JsonName("initNames")>]  InitNames  : string array
+        [<JsonName("initTexts")>]  InitTexts  : string array
     }
 
 type Message =

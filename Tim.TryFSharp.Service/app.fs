@@ -25,9 +25,9 @@ module App =
     let emptySession : Session =
         { 
             Rev = None
-            Owner = ""
-            Host = Dns.GetHostName()
-            ServicePid = int64 (Process.GetCurrentProcess().Id)
+            Owner = None
+            Host = Some (Dns.GetHostName())
+            ServicePid = Some (int64 (Process.GetCurrentProcess().Id))
             FsiPid = None
             InitNames = [| |]
             InitTexts = [| |]
@@ -42,14 +42,14 @@ module App =
     let claimSession (app : App) (inbox : MailboxProcessor<_>) (id : string) : App * Claim =
         let rec impl () =
             match TryFSharpDB.getSession app.BaseUri id with
-            | Some session when session.Owner <> app.OwnServerId ->
-                app, OtherSession(session.Host, session.ServicePid)
+            | Some ({ Owner = Some owner } as session) when owner <> app.OwnServerId ->
+                app, OtherSession(defaultArg session.Host "", defaultArg session.ServicePid -1L)
 
             | s ->
                 let session =
                     match s with
                     | Some session -> session
-                    | None -> { emptySession with Owner = app.OwnServerId }
+                    | None -> { emptySession with Owner = Some app.OwnServerId }
 
                 match TryFSharpDB.safePutSession app.BaseUri id session with
                 | Some rev ->
