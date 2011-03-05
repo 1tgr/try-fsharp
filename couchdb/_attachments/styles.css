@@ -207,6 +207,15 @@ body {
     width: 330px;
 }
 
+/* Wide-None */
+
+.layout-wn #alpha {
+    width: 940px;
+}
+
+.layout-wn #beta {
+    display: none;
+}
 
 /* Content ---------------------------------------------------------------- */
 
@@ -806,9 +815,12 @@ a:hover {
 }
 
 #header-name {
-    color: #eee; 
     font-size: 34px;
     font-weight: bold;
+}
+
+#header-name a {
+    color: #eee; 
     text-shadow: #111 1px 1px 1px;
 }
 

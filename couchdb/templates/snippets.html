@@ -14,7 +14,7 @@
         <div id="header-content">
 
 
-            <h1 id="header-name"><a href="http://tryfs.net/" accesskey="1">Try F#</a> Snippet</h1>
+            <h1 id="header-name"><a href="http://tryfs.net/" accesskey="1">Try F#</a> Snippets</h1>
             <h2 id="header-description"></h2>
 
         </div>
@@ -27,8 +27,16 @@
                     <div id="alpha">
                         <div id="alpha-inner">
                             <div class="entry-asset asset hentry">
+                                <div class="asset-content entry-content">
+                                    <div class="asset-body">
+                                        <p>These are F# code snippets from <a href="http://fssnip.net">fssnip.net</a>. You can run each one in your web browser.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            {{#snippets}}
+                            <div class="entry-asset asset hentry">
                                 <div class="asset-header">
-                                    <h2 class="asset-name entry-title">{{ title }}</h2>
+                                    <h2 class="asset-name entry-title"><a href="/snippets/{{ _id }}">{{ title }}</a></h2>
                                 </div>
                                 <div class="asset-content entry-content">
                                     <div class="asset-body">
@@ -38,25 +46,16 @@
                                 <div class="asset-footer">
                                     <div class="asset-footer-inner">
                                         <div class="asset-footer-meta">
-                                            <p>Posted by {{ author }} <span class="date">on {{ date }}</span>{{#link}}. Original: <a href="{{ link }}">{{ link }}</a>{{/link}}</p>
+                                            <p>Posted by {{ author }} <span class="date">on {{ date }}</span></p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+                            {{/snippets}}
                          </div>
                      </div>
                  </div>
              </div>
-
-             <div id="fsi">
-                <div id="fsi-inner">
-                    <div>
-                        <textarea id="code" class="console" cols="40" rows="25">{{ code }}</textarea></div>
-                    <div id="toolbar">
-                        <input id="send" type="button" value="Load and Run" /></div>
-                    <div id="console" class="console"></div>
-                </div>
-            </div>
         </div>
     </div>
 </body>

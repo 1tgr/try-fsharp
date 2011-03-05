@@ -45,7 +45,22 @@ hello "world"</textarea></div>
                                 </div>
                                 <div class="asset-content entry-content">
                                     <div class="asset-body">
-                                        <p><strong><a href="http://fssnip.net/">Type some F# code</a> and press the "Load and Run" button.</strong> Alternatively, type an F# expression at the cursor, followed by <code>;;</code>, and press Enter.</p>
+                                        <p><strong>Type some F# code and press the "Load and Run" button.</strong> Alternatively, type an F# expression at the cursor, followed by <code>;;</code>, and press Enter.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="entry-asset asset hentry">
+                                <div class="asset-header">
+                                    <h2 class="asset-name entry-title">Latest snippets</h2>
+                                </div>
+                                <div class="asset-content entry-content">
+                                    <div class="asset-body">
+                                        <ul>
+                                    {{#snippets}}
+                                            <li><strong><a href="snippets/{{ _id }}">{{ title }}</a></strong> by {{ author }} <span class="date">on {{ date }}</span></li>
+                                    {{/snippets}}
+                                            <p><em><a href="snippets/">more snippets...</a></em></p>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
