@@ -23,22 +23,39 @@ function init() {
       });
     }
 
-    function subscribe() {
-        if (!sessionId) {
-            sessionId = $.couch.newUUID();
-            $.get(
-                "/tryfs/",
-                { },
-                function(info) {
-                    db.changes(info.update_seq, { filter: "app/session", include_docs: true, sessionId: sessionId }).onChange(onChange);
-                },
-                "json");
+    function subscribe(success) {
+        if (sessionId) {
+            success(sessionId);
+        } else {
+            var session = {
+                initNames: [ "init" ],
+                initTexts: [ "printfn \"hello\"" ]
+            };
+            
+            db.saveDoc(
+                session,
+                {
+                    success: function(resp) {
+                        sessionId = resp.id;
+                        $.get(
+                            "/tryfs/",
+                            { },
+                            function(info) {
+                                db.changes(info.update_seq, { filter: "app/session", include_docs: true, sessionId: sessionId }).onChange(onChange);
+                            },
+                            "json");
+
+                        success(sessionId);
+                    }
+                });
         }
     }
 
     function commandHandle(code) {
-        subscribe();
-        db.saveDoc({ messageType: "in", message: code, sessionId: sessionId });
+        subscribe(function(sessionId) {
+            db.saveDoc({ messageType: "in", message: code, sessionId: sessionId });
+        });
+        
         return true;
     }
 
@@ -48,10 +65,11 @@ function init() {
     });
 
     function onSend() {
-        subscribe();
         var code = $("#code").val() + ";;";
-        console.commandResult(code, "jquery-console-message-success");
-        db.saveDoc({ messageType: "in", message: code, sessionId: sessionId });
+        subscribe(function(sessionId) {
+            db.saveDoc({ messageType: "in", message: code, sessionId: sessionId });
+            console.commandResult(code, "jquery-console-message-success");
+        });
     }
 
     $("#send").click(onSend);
