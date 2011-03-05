@@ -116,8 +116,7 @@ module App =
 
         async {
             use client = new WebClient()
-            let! rss = client.AsyncDownloadString(Uri("http://fssnip.net/pages/Rss"))
-            let doc = using (new StringReader(rss)) (fun reader -> (XPathDocument(reader)).CreateNavigator())
+            let doc = (XPathDocument("http://fssnip.net/pages/Rss")).CreateNavigator()
             let items : seq<XPathNavigator> = Seq.cast (doc.Select("/rss/channel/item"))
 
             for item in items do
