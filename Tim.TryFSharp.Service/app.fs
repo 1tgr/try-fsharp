@@ -99,7 +99,8 @@ module App =
     let killSession (app : App) (id : string) (rev : string) (proc : FsiProcess) : App =
         try
             CouchDB.deleteDocument app.BaseUri id rev
-        with _ -> ()
+        with ex ->
+            Log.info "Failed to delete (%s, %s) - %O" id rev ex
 
         (proc :> IDisposable).Dispose()
         { app with OwnSessions = Map.remove id app.OwnSessions }

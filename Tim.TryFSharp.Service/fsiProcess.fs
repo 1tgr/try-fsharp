@@ -2,6 +2,7 @@
 
 open System
 open System.Diagnostics
+open System.Text
 open System.Threading
 open System.IO
 open Tim.TryFSharp.Core
@@ -17,6 +18,16 @@ type FsiProcessInfo =
 type FsiProcess(info : FsiProcessInfo) =
     let path = sprintf "%s\\%s" (Path.GetTempPath()) info.Name
 
+    let initTexts =
+        let chars = Path.GetInvalidFileNameChars()
+
+        [| for name, text in info.InitTexts ->
+            let name =
+                (name, chars)
+                ||> Array.fold (fun name char -> name.Replace(char, '_'))
+
+            Path.ChangeExtension(name, ".fsx"), text |]
+
     let proc =
         let programFiles =
             match Environment.GetEnvironmentVariable("ProgramFiles(x86)") with
@@ -31,6 +42,19 @@ type FsiProcess(info : FsiProcessInfo) =
                 filename
             else
                 "fsi"
+
+        startInfo.Arguments <-
+            (StringBuilder(), initTexts)
+            ||> Array.fold (fun sb (name, _) ->
+                let sb =
+                    if sb.Length > 0 then
+                        sb.Append(" ")
+                    else
+                        sb
+
+                Printf.bprintf sb "--load:%s" name
+                sb)
+            |> string
 
         startInfo.WorkingDirectory <- path
         startInfo.RedirectStandardError <- true
@@ -68,9 +92,8 @@ type FsiProcess(info : FsiProcessInfo) =
         proc.ErrorDataReceived.Add post
 
         ignore (Directory.CreateDirectory path)
-        for name, text in info.InitTexts do
-            let filename = Path.Combine(path, sprintf "%s.fsx" name)
-            File.WriteAllText(filename, text)
+        for name, text in initTexts do
+            File.WriteAllText(Path.Combine(path, name), text)
 
         ignore (proc.Start())
         proc.BeginErrorReadLine()
