@@ -39,9 +39,7 @@ module App =
         | ProcessFailed of Exception
         | SlowStopIgnore
 
-    let claimSession (app : App) (inbox : MailboxProcessor<_>) (sessionName : string) : App * Claim =
-        let id = sprintf "session-%s" sessionName
-
+    let claimSession (app : App) (inbox : MailboxProcessor<_>) (id : string) : App * Claim =
         let rec impl () =
             match TryFSharpDB.getSession app.BaseUri id with
             | Some session when session.Owner <> app.OwnServerId ->
@@ -60,7 +58,7 @@ module App =
                     try
                         let info : FsiProcessInfo =
                             {
-                                Name = sessionName
+                                Name = id
                                 InitTexts = Array.zip session.InitNames session.InitTexts
 
                                 Print = fun s ->
@@ -69,7 +67,7 @@ module App =
                                             Rev = None
                                             Date = Some (DateTime.UtcNow.ToString("o"))
                                             MessageType = "out"
-                                            SessionId = sessionName
+                                            SessionId = id
                                             Message = s
                                             QueueStatus = None
                                         }
