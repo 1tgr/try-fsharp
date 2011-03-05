@@ -17,7 +17,7 @@ function(newDoc, oldDoc, userCtx) {
         } else if (newDoc.messageType == "out") {
         } else if (newDoc.messageType) {
             throw { forbidden: "unrecognised messageType" };
-        } else {
+        } else if (!newDoc._deleted) {
             throw { forbidden: "type or messageType must be set" };
         }
     }
