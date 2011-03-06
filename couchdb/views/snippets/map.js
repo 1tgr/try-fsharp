@@ -8,6 +8,6 @@ function(doc) {
     }
 
     delete doc2.code;
-    emit(null, doc2);
+    emit(doc2.date, doc2);
   }
 }
