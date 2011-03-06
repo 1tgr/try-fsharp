@@ -67,6 +67,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="timer.fs" />
     <Compile Include="fsiProcess.fs" />
     <Compile Include="tryFSharpDB.fs" />
     <Compile Include="app.fs" />

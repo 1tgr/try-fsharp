@@ -66,15 +66,33 @@ type FsiProcess(info : FsiProcessInfo) =
         proc.StartInfo <- startInfo
         proc
 
-    let recycleTimer = new Timer(TimerCallback(fun _ -> info.Recycle ()))
+    let syncRoot = obj()
+    let buffer = ref []
+
+    let flush () =
+        let buffer = lock syncRoot <| fun _ ->
+            let b = !buffer
+            buffer := []
+            b
+
+        buffer
+        |> List.rev
+        |> String.concat "\n"
+        |> info.Print
+
+    let recycleTimer = Timer.timer info.Recycle
+    let flushTimer = Timer.timer flush
 
     let resetRecycleTimer () =
-        ignore (recycleTimer.Change(dueTime = TimeSpan.FromMinutes(10.0), period = TimeSpan.FromMilliseconds(-1.0)))
+        ignore (Timer.at (TimeSpan.FromMinutes(10.0)) recycleTimer)
 
     let post (args : DataReceivedEventArgs) =
         if args.Data <> null then
-            resetRecycleTimer()
-            info.Print args.Data
+            lock syncRoot <| fun _ ->
+                buffer := args.Data :: !buffer
+
+            resetRecycleTimer ()
+            ignore (Timer.at (TimeSpan.FromMilliseconds(100.0)) flushTimer)
 
     do
         resetRecycleTimer ()
@@ -110,3 +128,5 @@ type FsiProcess(info : FsiProcessInfo) =
 
             proc.Dispose()
             recycleTimer.Dispose()
+            flushTimer.Dispose()
+            flush ()

@@ -49,11 +49,9 @@ type ServiceState =
         Async.Start(subscribe, cts.Token)
 
         let timer =
-            new Timer(
-                TimerCallback(fun _ -> mailbox.Post RefreshFeeds),
-                null,
-                TimeSpan.FromTicks(0L),
-                TimeSpan.FromMinutes(10.0))
+            fun _ -> mailbox.Post RefreshFeeds
+            |> Timer.timer
+            |> Timer.every (TimeSpan.FromMinutes(10.0))
 
         {
             Mailbox = mailbox
