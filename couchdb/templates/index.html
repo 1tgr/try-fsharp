@@ -57,7 +57,7 @@ hello "world"</textarea></div>
                                     <div class="asset-body">
                                         <ul>
                                     {{#snippets}}
-                                            <li><strong><a href="snippets/{{ _id }}">{{ title }}</a></strong> by {{ author }} <span class="date">on {{ date }}</span></li>
+                                            <li><strong><a href="snippets/{{ _id }}">{{ title }}</a></strong> by {{ author }} <abbr class="timeago" title="{{ date }} ">on {{ date }}</abbr></li>
                                     {{/snippets}}
                                             <p><em><a href="snippets/">more snippets...</a></em></p>
                                         </ul>

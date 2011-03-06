@@ -87,6 +87,7 @@ function init() {
     }
 
     $("#send").click(onSend);
+    $("abbr.timeago").timeago();
 }
 
 $(document).ready(init);
