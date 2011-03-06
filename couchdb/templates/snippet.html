@@ -4,7 +4,7 @@
 <head>
     {{>head}}
 </head>
-<body id="classic-website" class="mt-main-index layout-wn">
+<body id="classic-website" class="mt-main-index layout-wt">
     <div id="container">
         <div id="container-inner">
 
@@ -38,13 +38,25 @@
                                 <div class="asset-footer">
                                     <div class="asset-footer-inner">
                                         <div class="asset-footer-meta">
-                                            <p>Posted by {{ author }} <span class="date">on {{ date }}</span>{{#link}}. Original: <a href="{{ link }}">{{ link }}</a>{{/link}}</p>
+                                            <p>Posted by {{ author }} <span class="date">on {{ date }}</span></p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                          </div>
-                     </div>
+                    </div>
+                    <div id="beta">
+                        <div id="beta-inner">
+                            <div class="widget">
+                                <div class="widget-content">
+                                    <ul>
+                                        <li><a href="http://twitter.com/share" class="twitter-share-button" data-count="horizontal" data-text="{{ title }} #fsharp #snippet" data-url="http://tryfs.net/snippets/{{ _id }}">Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script></li>
+                                        {{#link}}<li>Original: <a href="{{ link }}">{{ link }}</a></li>{{/link}}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                  </div>
              </div>
 
