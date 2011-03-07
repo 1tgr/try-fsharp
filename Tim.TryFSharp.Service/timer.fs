@@ -12,5 +12,5 @@ module Timer =
         timer
 
     let every (period : TimeSpan) (timer : Timer) =
-        ignore (timer.Change(dueTime = TimeSpan.FromMilliseconds(-1.0), period = period))
+        ignore (timer.Change(dueTime = TimeSpan.FromTicks(0L), period = period))
         timer
