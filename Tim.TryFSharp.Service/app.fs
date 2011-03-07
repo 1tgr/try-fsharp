@@ -113,46 +113,49 @@ module App =
             unbox (child.ValueAs(typeof<'a>))
 
         async {
-            use client = new WebClient()
-            let doc = (XPathDocument("http://fssnip.net/pages/Rss?all=yes")).CreateNavigator()
-            let items : seq<XPathNavigator> = Seq.cast (doc.Select("/rss/channel/item"))
+            try
+                use client = new WebClient()
+                let doc = (XPathDocument("http://fssnip.net/pages/Rss")).CreateNavigator()
+                let items : seq<XPathNavigator> = Seq.cast (doc.Select("/rss/channel/item"))
 
-            for item in items do
-                try
-                    let link : string = select item "link"
-                    let builder = UriBuilder(link)
-                    let id = sprintf "snippet-%s" (builder.Path.Substring(1))
-                    builder.Path <- "/raw" + builder.Path
+                for item in items do
+                    try
+                        let link : string = select item "link"
+                        let builder = UriBuilder(link)
+                        let id = sprintf "snippet-%s" (builder.Path.Substring(1))
+                        builder.Path <- "/raw" + builder.Path
 
-                    let! code = client.AsyncDownloadString(builder.Uri)
+                        let! code = client.AsyncDownloadString(builder.Uri)
 
-                    let oldSnippet : Snippet option = CouchDB.notFound (CouchDB.getDocument app.BaseUri) id
+                        let oldSnippet : Snippet option = CouchDB.notFound (CouchDB.getDocument app.BaseUri) id
 
-                    let newSnippet : Snippet =
-                        {
-                            Rev =
-                                match oldSnippet with
-                                | Some snippet -> snippet.Rev
-                                | None -> None
+                        let newSnippet : Snippet =
+                            {
+                                Rev =
+                                    match oldSnippet with
+                                    | Some snippet -> snippet.Rev
+                                    | None -> None
 
-                            Type = "snippet"
-                            Title = select item "title"
-                            Date = DateTime.Parse(select item "pubDate", CultureInfo.InvariantCulture)
-                            Author = select item "author"
-                            Description = select item "description"
-                            Link = Some (select item "link")
-                            Code = code
-                        }
+                                Type = "snippet"
+                                Title = select item "title"
+                                Date = DateTime.Parse(select item "pubDate", CultureInfo.InvariantCulture)
+                                Author = select item "author"
+                                Description = select item "description"
+                                Link = Some (select item "link")
+                                Code = code
+                            }
 
-                    let changed =
-                        match oldSnippet with
-                        | Some oldSnippet -> oldSnippet <> newSnippet
-                        | None -> true
+                        let changed =
+                            match oldSnippet with
+                            | Some oldSnippet -> oldSnippet <> newSnippet
+                            | None -> true
 
-                    if changed then
-                        ignore (CouchDB.putDocument app.BaseUri id newSnippet)
-                with ex ->
-                    Log.info "Failed to import RSS item. %O" ex
+                        if changed then
+                            ignore (CouchDB.putDocument app.BaseUri id newSnippet)
+                    with ex ->
+                        Log.info "Failed to import RSS item. %O" ex
+            with ex ->
+                Log.info "Failed to import RSS feed. %O" ex
         }
 
     let rec run (app : App) (inbox : MailboxProcessor<_>) : Async<unit> =
