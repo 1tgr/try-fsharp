@@ -14,3 +14,7 @@ module Timer =
     let every (period : TimeSpan) (timer : Timer) =
         ignore (timer.Change(dueTime = TimeSpan.FromTicks(0L), period = period))
         timer
+
+    let never (timer : Timer) =
+        ignore (timer.Change(dueTime = Timeout.Infinite, period = Timeout.Infinite))
+        timer

@@ -67,18 +67,15 @@ type FsiProcess(info : FsiProcessInfo) =
         proc
 
     let syncRoot = obj()
-    let buffer = ref []
+    let buffer = ResizeArray<string>()
 
     let flush () =
-        let buffer = lock syncRoot <| fun _ ->
-            let b = !buffer
-            buffer := []
-            b
+        let s = lock syncRoot <| fun _ ->
+            let s = String.concat "\n" buffer
+            buffer.Clear()
+            s
 
-        buffer
-        |> List.rev
-        |> String.concat "\n"
-        |> info.Print
+        info.Print s
 
     let recycleTimer = Timer.timer info.Recycle
     let flushTimer = Timer.timer flush
@@ -88,11 +85,17 @@ type FsiProcess(info : FsiProcessInfo) =
 
     let post (args : DataReceivedEventArgs) =
         if args.Data <> null then
-            lock syncRoot <| fun _ ->
-                buffer := args.Data :: !buffer
+            let immediateFlush =
+                lock syncRoot <| fun _ ->
+                    buffer.Add(args.Data)
+                    buffer.Count > 100
 
             resetRecycleTimer ()
-            ignore (Timer.at (TimeSpan.FromMilliseconds(100.0)) flushTimer)
+            if immediateFlush then
+                flush ()
+                ignore (Timer.never flushTimer)
+            else
+                ignore (Timer.at (TimeSpan.FromMilliseconds(100.0)) flushTimer)
 
     do
         resetRecycleTimer ()
