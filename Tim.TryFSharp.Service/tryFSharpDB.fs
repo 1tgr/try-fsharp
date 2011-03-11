@@ -28,14 +28,16 @@ type Message =
 
 type Snippet =
     {
-        [<JsonName("_rev")>] Rev : string option
-        [<JsonName("type")>] Type : string
-        [<JsonName("title")>] Title : string
-        [<JsonName("date")>] Date : DateTime
-        [<JsonName("author")>] Author : string
+        [<JsonName("_rev")>]        Rev : string option
+        [<JsonName("type")>]        Type : string
+        [<JsonName("title")>]       Title : string
+        [<JsonName("date")>]        Date : DateTime
+        [<JsonName("author")>]      Author : string
+        [<JsonName("userId")>]      UserId : string option
+        [<JsonName("private")>]     Private : bool option
         [<JsonName("description")>] Description : string
-        [<JsonName("link")>] Link: string option
-        [<JsonName("code")>] Code : string
+        [<JsonName("link")>]        Link : string option
+        [<JsonName("code")>]        Code : string
     }
 
 module TryFSharpDB =
