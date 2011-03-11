@@ -1,5 +1,5 @@
 function(doc) {
-  if (doc.type == "snippet") {
+  if (doc.type == "snippet" && !doc.private) {
     var doc2 = {};
     for (name in doc) {
       if (doc.hasOwnProperty(name)) {

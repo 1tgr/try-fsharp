@@ -17,6 +17,7 @@ function(newDoc, oldDoc, userCtx) {
             "title",
             "date",
             "author",
+            "userId",
             "description",
             "code" ]);
     } else if (newDoc.type) {
