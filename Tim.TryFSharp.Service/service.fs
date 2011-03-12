@@ -106,31 +106,42 @@ module Service =
         async {
             try
                 use client = new WebClient()
-                let githubUri = Uri("http://gist.github.com/api/v1/json/gists/")
+                let gistUri = Uri("http://gist.github.com/")
                 let user = "timrobinson"
-                let! s = client.AsyncDownloadString(Uri(githubUri, user))
+                let! s = client.AsyncDownloadString(Uri(Uri(gistUri, "/api/v1/json/"), user))
                 let gists : Gists =
                     using (new StringReader(s)) <| fun reader ->
                         use reader = new JsonTextReader(reader)
                         Json.parse reader
 
                 for gist in gists.Gists do
-                    let id = sprintf "gist-%s" gist.Repo
+                    for filename in gist.Files do
+                        try
+                            let id, link =
+                                if Array.length gist.Files = 1 then
+                                    sprintf "gist-%s" gist.Repo, Uri(gistUri, gist.Repo)
+                                else
+                                    let builder = UriBuilder(Uri(gistUri, gist.Repo))
+                                    builder.Fragment <- filename
+                                    sprintf "gist-%s-%s" gist.Repo filename, builder.Uri
 
-                    changeSnippet baseUri id <| fun rev ->
-                        {
-                            Rev = rev
-                            Type = "snippet"
-                            Title = gist.Description
-                            Date = DateTime.Parse(gist.CreatedAt, CultureInfo.InvariantCulture)
-                            Author = user
-                            UserId = Some user
-                            Private = Some true
-                            Description = ""
-                            Link = Some (sprintf "https://gist.github.com/%s" gist.Repo)
-                            Code = ""
-                        }
-                    
+                            let! code = client.AsyncDownloadString(Uri(Uri(Uri(gistUri, "/raw/"), gist.Repo), filename))
+
+                            changeSnippet baseUri id <| fun rev ->
+                                {
+                                    Rev = rev
+                                    Type = "snippet"
+                                    Title = gist.Description
+                                    Date = DateTime.Parse(gist.CreatedAt, CultureInfo.InvariantCulture)
+                                    Author = user
+                                    UserId = Some user
+                                    Private = Some true
+                                    Description = ""
+                                    Link = Some (string link)
+                                    Code = code
+                                }
+                        with ex ->
+                            Log.info "Failed to import gist %s/%s. %O" gist.Repo filename ex
             with ex ->
                 Log.info "Failed to import gists. %O" ex
         }
