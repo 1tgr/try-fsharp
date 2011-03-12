@@ -106,7 +106,7 @@ module Service =
         async {
             try
                 use client = new WebClient()
-                let gistUri = Uri("http://gist.github.com/")
+                let gistUri = Uri("https://gist.github.com/")
                 let user = "timrobinson"
                 let! s = client.AsyncDownloadString(Uri(Uri(gistUri, "/api/v1/json/"), user))
                 let gists : Gists =
