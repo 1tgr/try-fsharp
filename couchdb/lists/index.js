@@ -10,7 +10,6 @@ function(head, req) {
         }
     }
 
-    var Mustache = require("lib/mustache");
     var doc = {
         head: {
             title: "Try F#"
@@ -21,6 +20,7 @@ function(head, req) {
     if (isJson) {
         send(JSON.stringify(doc));
     } else {
+        var Mustache = require("lib/mustache");
         send(Mustache.to_html(this.templates.index, doc, this.templates.partials));
     }
 }

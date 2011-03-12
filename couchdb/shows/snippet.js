@@ -1,5 +1,11 @@
 function(doc, req) {  
-    var Mustache = require("lib/mustache");
+    var isJson = req.query.format === "json";
     doc.head = { title: doc.title };
-    return Mustache.to_html(this.templates.snippet, doc, this.templates.partials);
+
+    if (isJson) {
+        send(JSON.stringify(doc));
+    } else {
+        var Mustache = require("lib/mustache");
+        send(Mustache.to_html(this.templates.snippet, doc, this.templates.partials));
+    }
 }

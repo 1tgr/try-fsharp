@@ -12,7 +12,6 @@ function(head, req) {
         }
     }
 
-    var Mustache = require("lib/mustache");
     var doc = {
         head: {
             title: isFSSnip ? "Snippets" : "Snippets for " + userId
@@ -25,6 +24,7 @@ function(head, req) {
     if (isJson) {
         send(JSON.stringify(doc));
     } else {
+        var Mustache = require("lib/mustache");
         send(Mustache.to_html(this.templates.snippets, doc, this.templates.partials));
     }
 }
