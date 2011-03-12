@@ -18,7 +18,6 @@ function(newDoc, oldDoc, userCtx) {
             "date",
             "author",
             "userId",
-            "description",
             "code" ]);
     } else if (newDoc.type) {
         throw { forbidden: "unrecognised type" };

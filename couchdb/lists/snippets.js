@@ -1,4 +1,10 @@
-function(head, req) {  
+function(head, req) {
+    var userId = req.query.userId || null;
+    var matches =
+        userId
+        ? function(row) { return row.value.userId === userId; }
+        : function(row) { return !row.value.private; };
+
     var row, snippets = [];
 
     start({
@@ -8,16 +14,23 @@ function(head, req) {
     });
 
     while (row = getRow()) {
-        snippets.push(row.value);
+        if (matches(row)) {
+            snippets.push(row.value);
+        }
     }
 
     var Mustache = require("lib/mustache");
     var doc = {
         head: {
-            title: "Snippets"
+            title: userId ? "Snippets for " + userId : "Snippets"
         },
+        userId: userId,
         snippets: snippets
     };
 
-    send(Mustache.to_html(this.templates.snippets, doc, this.templates.partials));
+    if (req.query.format === "json") {
+        send(JSON.stringify(doc));
+    } else {
+        send(Mustache.to_html(this.templates.snippets, doc, this.templates.partials));
+    }
 }

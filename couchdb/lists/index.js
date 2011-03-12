@@ -19,5 +19,9 @@ function(head, req) {
         snippets: snippets
     };
 
-    send(Mustache.to_html(this.templates.index, doc, this.templates.partials));
+    if (req.query.format === "json") {
+        send(JSON.stringify(doc));
+    } else {
+        send(Mustache.to_html(this.templates.index, doc, this.templates.partials));
+    }
 }

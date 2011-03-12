@@ -14,7 +14,9 @@
         <div id="header-content">
 
 
-            <h1 id="header-name"><a href="http://tryfs.net/" accesskey="1">Try F#</a> Snippets</h1>
+            {{#head}}
+            <h1 id="header-name"><a href="http://tryfs.net/" accesskey="1">Try F#</a> {{title}}</h1>
+            {{/head}}
             <h2 id="header-description"></h2>
 
         </div>
@@ -26,6 +28,7 @@
                 <div id="content-inner">
                     <div id="alpha">
                         <div id="alpha-inner">
+                            {{^userId}}
                             <div class="entry-asset asset hentry">
                                 <div class="asset-content entry-content">
                                     <div class="asset-body">
@@ -33,6 +36,7 @@
                                     </div>
                                 </div>
                             </div>
+                            {{/userId}}
                             {{#snippets}}
                             <div class="entry-asset asset hentry">
                                 <div class="asset-header">
