@@ -54,7 +54,15 @@ module Json =
 
                 let reader (raw : JToken) : obj =
                     let dict : JObject = unbox raw
-                    let values = Array.map (fun (name, reader, _) -> reader (dict.[name])) serializers
+                    let values =
+                        [|
+                            for name, reader, _ in serializers ->
+                                try
+                                    reader (dict.[name])
+                                with ex ->
+                                    raise (InvalidOperationException(sprintf "%s: %s" name ex.Message, ex))
+                        |]
+
                     make values
 
                 let writer (record : obj) : JToken =
@@ -100,6 +108,7 @@ module Json =
                     let reader : JToken -> obj =
                         function
                         | null -> makeNull ()
+                        | :? JValue as value when value.Value = null -> makeNull ()
                         | raw -> raw |> reader |> makeNotNull
 
                     let writer (union : obj) : JToken =
@@ -165,9 +174,15 @@ module Json =
                 reader, writer
 
             | t when t = typeof<bool> || t = typeof<int> || t = typeof<int64> || t = typeof<string> ->
-                let reader (raw : JToken) : obj =
-                    let value : JValue = unbox raw
-                    value.Value
+                let reader (raw : JToken) =
+                    match raw with
+                    | null -> failwithf "Expected %s, not null" t.Name
+                    | :? JValue as value ->
+                        match value.Value with
+                        | null -> failwithf "Expected %s, not null" t.Name
+                        | value when value.GetType() <> t -> failwithf "Expected %s, not %O" t.Name value
+                        | value -> value
+                    | token -> failwithf "Expected %s, not %O" t.Name token
 
                 let writer (value : obj) : JToken =
                     JValue(value) :> JToken

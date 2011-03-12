@@ -16,7 +16,7 @@ module Service =
             [<JsonName("repo")>]        Repo : string
             [<JsonName("files")>]       Files : string array
             [<JsonName("owner")>]       Owner : string
-            [<JsonName("description")>] Description : string
+            [<JsonName("description")>] Description : string option
         }
 
     type Gists =
@@ -65,9 +65,10 @@ module Service =
                 changeSnippet baseUri id fn
 
     let refreshFSSnip (baseUri : Uri) : Async<unit> =
-        let select (nav : XPathNavigator) (xpath : string) : 'a =
-            let child = nav.SelectSingleNode(xpath)
-            unbox (child.ValueAs(typeof<'a>))
+        let select (nav : XPathNavigator) (xpath : string) : 'a option =
+            match nav.SelectSingleNode(xpath) with
+            | null -> None
+            | child -> Some (unbox (child.ValueAs(typeof<'a>)))
 
         async {
             try
@@ -77,25 +78,33 @@ module Service =
 
                 for item in items do
                     try
-                        let link : string = select item "link"
-                        let builder = UriBuilder(link)
-                        let id = sprintf "snippet-%s" (builder.Path.Substring(1))
-                        builder.Path <- "/raw" + builder.Path
+                        match select item "link" with
+                        | Some (link : string) ->
+                            let builder = UriBuilder(link)
+                            let id = sprintf "snippet-%s" (builder.Path.Substring(1))
+                            builder.Path <- "/raw" + builder.Path
 
-                        let! code = client.AsyncDownloadString(builder.Uri)
-                        changeSnippet baseUri id <| fun rev ->
-                            {
-                                Rev = rev
-                                Type = "snippet"
-                                Title = select item "title"
-                                Date = DateTime.Parse(select item "pubDate", CultureInfo.InvariantCulture)
-                                Author = select item "author"
-                                UserId = Some "fssnip"
-                                Private = None
-                                Description = select item "description"
-                                Link = Some (select item "link")
-                                Code = code
-                            }
+                            let! code = client.AsyncDownloadString(builder.Uri)
+                            changeSnippet baseUri id <| fun rev ->
+                                {
+                                    Rev = rev
+                                    Type = "snippet"
+                                    Title = Some (defaultArg (select item "title") "Untitled")
+
+                                    Date =
+                                        match select item "pubDate" with
+                                        | Some s -> DateTime.Parse(s, CultureInfo.InvariantCulture)
+                                        | None -> DateTime.MinValue
+
+                                    Author = defaultArg (select item "author") ""
+                                    UserId = Some "fssnip"
+                                    Private = None
+                                    Description = select item "description"
+                                    Link = Some link
+                                    Code = code
+                                }
+
+                        | None -> ()
                     with ex ->
                         Log.info "Failed to import RSS item. %O" ex
             with ex ->
@@ -108,7 +117,7 @@ module Service =
                 use client = new WebClient()
                 let gistUri = Uri("https://gist.github.com/")
                 let user = "timrobinson"
-                let! s = client.AsyncDownloadString(Uri(Uri(gistUri, "/api/v1/json/"), user))
+                let! s = client.AsyncDownloadString(Uri(Uri(gistUri, "/api/v1/json/gists/"), user))
                 let gists : Gists =
                     using (new StringReader(s)) <| fun reader ->
                         use reader = new JsonTextReader(reader)
@@ -125,18 +134,23 @@ module Service =
                                     builder.Fragment <- filename
                                     sprintf "gist-%s-%s" gist.Repo filename, builder.Uri
 
-                            let! code = client.AsyncDownloadString(Uri(Uri(Uri(gistUri, "/raw/"), gist.Repo), filename))
+                            let! code = client.AsyncDownloadString(Uri(Uri(gistUri, "/raw/"), gist.Repo + "/" + filename))
 
                             changeSnippet baseUri id <| fun rev ->
                                 {
                                     Rev = rev
                                     Type = "snippet"
-                                    Title = gist.Description
+
+                                    Title =
+                                        match gist.Description with
+                                        | None | Some "" -> Some filename
+                                        | Some s -> Some s
+
                                     Date = DateTime.Parse(gist.CreatedAt, CultureInfo.InvariantCulture)
                                     Author = user
                                     UserId = Some user
                                     Private = Some true
-                                    Description = ""
+                                    Description = None
                                     Link = Some (string link)
                                     Code = code
                                 }

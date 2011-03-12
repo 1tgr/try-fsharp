@@ -30,12 +30,12 @@ type Snippet =
     {
         [<JsonName("_rev")>]        Rev : string option
         [<JsonName("type")>]        Type : string
-        [<JsonName("title")>]       Title : string
+        [<JsonName("title")>]       Title : string option
         [<JsonName("date")>]        Date : DateTime
         [<JsonName("author")>]      Author : string
         [<JsonName("userId")>]      UserId : string option
         [<JsonName("private")>]     Private : bool option
-        [<JsonName("description")>] Description : string
+        [<JsonName("description")>] Description : string option
         [<JsonName("link")>]        Link : string option
         [<JsonName("code")>]        Code : string
     }
