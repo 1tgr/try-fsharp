@@ -1,7 +1,7 @@
 [
     { "from": "tryfs/",             "to": "../../" },
     { "from": "tryfs/*",            "to": "../../*" },
-    { "from": "snippets",           "to": "_list/snippets/snippets", "query": { "descending": "true" } },
+    { "from": "snippets",           "to": "_list/snippets/snippets", "query": { "descending": "true", "userId": "fssnip" } },
     { "from": ":userId/snippets/*", "to": "_list/snippets/snippets", "query": { "descending": "true" } },
     { "from": "snippets/*",         "to": "_show/snippet/*" }, 
     { "from": "/",                  "to": "_list/index/snippets",    "query": { "descending": "true", "limit": 5 } },

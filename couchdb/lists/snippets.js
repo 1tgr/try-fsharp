@@ -1,20 +1,13 @@
 function(head, req) {
-    var userId = req.query.userId || null;
-    var matches =
-        userId
-        ? function(row) { return row.value.userId === userId; }
-        : function(row) { return !row.value.private; };
-
+    var isJson = req.query.format === "json";
+    var userId = req.query.userId;
+    var isFSSnip = userId === "fssnip";
     var row, snippets = [];
 
-    start({
-        headers: {
-            "Content-Type": "text/html"
-        }
-    });
+    start({ headers: { "Content-Type": isJson ? "application/json" : "text/html" } });
 
     while (row = getRow()) {
-        if (matches(row)) {
+        if (row.value.userId === userId || (isFSSnip && !row.value.private)) {
             snippets.push(row.value);
         }
     }
@@ -22,13 +15,14 @@ function(head, req) {
     var Mustache = require("lib/mustache");
     var doc = {
         head: {
-            title: userId ? "Snippets for " + userId : "Snippets"
+            title: isFSSnip ? "Snippets" : "Snippets for " + userId
         },
+        isFSSnip: isFSSnip,
         userId: userId,
         snippets: snippets
     };
 
-    if (req.query.format === "json") {
+    if (isJson) {
         send(JSON.stringify(doc));
     } else {
         send(Mustache.to_html(this.templates.snippets, doc, this.templates.partials));
