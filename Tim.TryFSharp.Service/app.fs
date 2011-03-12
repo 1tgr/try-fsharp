@@ -19,7 +19,6 @@ type App =
 type Command =
     | Exit of AsyncReplyChannel<App>
     | Recycle of string
-    | RefreshFeeds
     | SlowStop
     | StdIn of string * Message
     | StdOut of Message
@@ -107,59 +106,6 @@ module App =
         (proc :> IDisposable).Dispose()
         { app with OwnSessions = Map.remove id app.OwnSessions }
 
-    let refreshFeedsAsync (app : App) : Async<unit> =
-        let select (nav : XPathNavigator) (xpath : string) : 'a =
-            let child = nav.SelectSingleNode(xpath)
-            unbox (child.ValueAs(typeof<'a>))
-
-        async {
-            try
-                use client = new WebClient()
-                let doc = (XPathDocument("http://fssnip.net/pages/Rss")).CreateNavigator()
-                let items : seq<XPathNavigator> = Seq.cast (doc.Select("/rss/channel/item"))
-
-                for item in items do
-                    try
-                        let link : string = select item "link"
-                        let builder = UriBuilder(link)
-                        let id = sprintf "snippet-%s" (builder.Path.Substring(1))
-                        builder.Path <- "/raw" + builder.Path
-
-                        let! code = client.AsyncDownloadString(builder.Uri)
-
-                        let oldSnippet : Snippet option = CouchDB.notFound (CouchDB.getDocument app.BaseUri) id
-
-                        let newSnippet : Snippet =
-                            {
-                                Rev =
-                                    match oldSnippet with
-                                    | Some snippet -> snippet.Rev
-                                    | None -> None
-
-                                Type = "snippet"
-                                Title = select item "title"
-                                Date = DateTime.Parse(select item "pubDate", CultureInfo.InvariantCulture)
-                                Author = select item "author"
-                                UserId = Some "fssnip"
-                                Private = None
-                                Description = select item "description"
-                                Link = Some (select item "link")
-                                Code = code
-                            }
-
-                        let changed =
-                            match oldSnippet with
-                            | Some oldSnippet -> oldSnippet <> newSnippet
-                            | None -> true
-
-                        if changed then
-                            ignore (CouchDB.putDocument app.BaseUri id newSnippet)
-                    with ex ->
-                        Log.info "Failed to import RSS item. %O" ex
-            with ex ->
-                Log.info "Failed to import RSS feed. %O" ex
-        }
-
     let rec run (app : App) (inbox : MailboxProcessor<_>) : Async<unit> =
         let impl =
             function
@@ -173,10 +119,6 @@ module App =
                     | Some (rev, proc) -> killSession app id rev proc
                     | None -> app
 
-                run app inbox
-
-            | RefreshFeeds ->
-                Async.Start (refreshFeedsAsync app)
                 run app inbox
 
             | SlowStop ->
