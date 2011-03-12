@@ -632,7 +632,7 @@ ul { list-style: disc outside; }
 /* Global */
 
 body {
-    font: normal 13px helvetica, arial, hirakakupro-w3, osaka, "ms pgothic", sans-serif;
+    font: normal 15px helvetica, arial, hirakakupro-w3, osaka, "ms pgothic", sans-serif;
 }
 
 
@@ -661,7 +661,7 @@ body {
 /* Content */
 
 .asset-name {
-    font-size: 22px;
+    font-size: 25px;
     font-weight: bold;
 }
 
@@ -1011,7 +1011,7 @@ a:hover {
 
 .console
 {
-    font-size: 14px;
+    font-size: 16px;
 }
 .console div.jquery-console-inner, #code
 {
