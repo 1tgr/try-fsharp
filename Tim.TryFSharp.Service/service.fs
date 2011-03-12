@@ -12,7 +12,7 @@ open Tim.TryFSharp.Core
 module Service =
     type Gist =
         {
-            [<JsonName("created_at")>]  CreatedAt : DateTime
+            [<JsonName("created_at")>]  CreatedAt : string
             [<JsonName("repo")>]        Repo : string
             [<JsonName("files")>]       Files : string array
             [<JsonName("owner")>]       Owner : string
@@ -122,7 +122,7 @@ module Service =
                             Rev = rev
                             Type = "snippet"
                             Title = gist.Description
-                            Date = gist.CreatedAt
+                            Date = DateTime.Parse(gist.CreatedAt, CultureInfo.InvariantCulture)
                             Author = user
                             UserId = Some user
                             Private = Some true
