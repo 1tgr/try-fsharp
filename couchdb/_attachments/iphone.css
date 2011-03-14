@@ -1,0 +1,28 @@
+#container-inner,
+.layout-wn #alpha,
+#header-inner,
+#footer-inner,
+#content-inner,
+#fsi-inner {
+    width: 480px;
+}
+
+.layout-wt #alpha {
+    width: 340px;
+}
+
+.layout-wt #beta {
+    width: 140px;
+}
+
+#header-content {
+    width: 382px;
+}
+
+#header-nav-inner {
+    width: 440px;
+}
+
+.console div.jquery-console-inner, #code {
+    width: 464px;
+}
