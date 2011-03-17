@@ -131,7 +131,15 @@ module App =
                     Log.info "Ignoring %s - owned by session %s on %s (pid %d)" id message.SessionId host pid
 
                 | OwnSession proc ->
-                    let rev = TryFSharpDB.putMessage app.BaseUri id { message with QueueStatus = Some "done" }
+                    let message = { message with QueueStatus = Some "done" }
+
+                    let message =
+                        if Option.isNone message.Date then
+                            { message with Date = Some (DateTime.UtcNow.ToString("o")) }
+                        else
+                            message
+
+                    let rev = TryFSharpDB.putMessage app.BaseUri id message
                     let message = { message with Rev = rev.Rev }
                     proc.Process.StandardInput.WriteLine message.Message
 
