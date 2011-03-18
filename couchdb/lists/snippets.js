@@ -1,30 +1,21 @@
 function(head, req) {
-    var isJson = req.query.format === "json";
-    var userId = req.query.userId;
-    var isFSSnip = userId === "fssnip";
-    var row, snippets = [];
+    var TryFS = require("lib/tryfs");
+    TryFS.render(req, start, send, this, this.templates.snippets, function() {
+        var userId = req.query.userId;
+        var isFSSnip = userId === "fssnip";
+        var row, snippets = [];
 
-    start({ headers: { "Content-Type": isJson ? "application/json" : "text/html" } });
-
-    while (row = getRow()) {
-        if (row.value.userId === userId || (isFSSnip && !row.value.private)) {
-            snippets.push(row.value);
+        while (row = getRow()) {
+            if (row.value.userId === userId || (isFSSnip && !row.value.private)) {
+                snippets.push(row.value);
+            }
         }
-    }
 
-    var doc = {
-        head: {
-            title: isFSSnip ? "Snippets" : "Snippets for " + userId
-        },
-        isFSSnip: isFSSnip,
-        userId: userId,
-        snippets: snippets
-    };
-
-    if (isJson) {
-        send(JSON.stringify(doc));
-    } else {
-        var Mustache = require("lib/mustache");
-        send(Mustache.to_html(this.templates.snippets, doc, this.templates.partials));
-    }
+        return {
+            title: isFSSnip ? "Snippets" : "Snippets for " + userId,
+            isFSSnip: isFSSnip,
+            userId: userId,
+            snippets: snippets
+        };
+    });
 }
