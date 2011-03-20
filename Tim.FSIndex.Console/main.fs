@@ -166,11 +166,22 @@ module Program =
     [<EntryPoint>]
     let Main args =
         let baseUri = Uri("http://veneto.partario.com:5984/fsindex/")
-        (0, Array.collect glob args)
-        ||> Array.fold (fun code arg ->
-            try
-                index baseUri arg
-                max code 0
-            with ex ->
-                Log.info "Failed to index %s. %O" arg ex
-                max code 1)
+
+        let indexAsync filename =
+            async {
+                try
+                    index baseUri filename
+                    return 0
+                with ex ->
+                    Log.info "Failed to index %s. %O" filename ex
+                    return 1
+            }
+
+        let codes =
+            args
+            |> Array.collect glob
+            |> Array.map indexAsync
+            |> Async.Parallel
+            |> Async.RunSynchronously
+
+        Array.max codes
