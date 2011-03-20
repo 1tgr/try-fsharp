@@ -65,6 +65,28 @@ module Program =
         |> Encoding.UTF8.GetBytes
         |> md5
 
+    let decodeName<'a when 'a :> ICustomAttributeProvider and 'a :> IMemberDefinition> (mem : 'a) : string =
+        let name =
+            match mem.CustomAttributes |> Seq.tryFind (fun a -> a.AttributeType.FullName = "Microsoft.FSharp.Core.CompilationRepresentationAttribute") with
+            | Some cra ->
+                let flags : CompilationRepresentationFlags = unbox cra.ConstructorArguments.[0].Value
+                match int (flags &&& CompilationRepresentationFlags.ModuleSuffix) with
+                | 0 -> None
+                | _ -> Some (mem.Name.Substring(0, mem.Name.Length - "Module".Length))
+            
+            | None ->
+                None
+
+        let name =
+            match name, mem.CustomAttributes |> Seq.tryFind (fun a -> a.AttributeType.FullName = "Microsoft.FSharp.Core.CompilationSourceNameAttribute") with
+            | None, Some csna ->
+                Some (unbox csna.ConstructorArguments.[0].Value)
+
+            | opt, _ ->
+                opt
+
+        defaultArg name mem.Name
+
     let types (assembly : AssemblyDefinition) : Type list =
         let assemblyName = assemblyName assembly
 
@@ -87,18 +109,18 @@ module Program =
                                         |]
 
                                     if not (Array.exists id ignore) then
-                                        yield { Name = methd.Name }
+                                        yield { Name = decodeName methd }
                             |]
 
                         let properties : Property array =
-                            [| for property in typ.Properties -> { Name = property.Name } |]
+                            [| for property in typ.Properties -> { Name = decodeName property } |]
                                 
                         yield {
                             Rev = None
                             Type = "type"
                             AssemblyName = assemblyName
                             Namespace = typ.Namespace
-                            Name = typ.Name
+                            Name = decodeName typ
                             Methods = methods
                             Properties = properties
                         }
