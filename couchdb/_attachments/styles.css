@@ -748,6 +748,10 @@ body {
 
 /* Global ----------------------------------------------------------------- */
 
+html {
+    overflow-y: scroll;
+}
+
 body {
     color: #333;  
     background-color: #ffb300; 
