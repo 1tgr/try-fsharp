@@ -11,6 +11,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tim.TryFSharp.Monitor", "Ti
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tim.TryFSharp.Core", "Tim.TryFSharp.Core\Tim.TryFSharp.Core.fsproj", "{5D850E2F-6B96-4B22-9672-9507763E632D}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tim.FSIndex.Console", "Tim.FSIndex.Console\Tim.FSIndex.Console.fsproj", "{870ECF11-0379-441D-9359-B95B78598195}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,16 @@ Global
 		{5D850E2F-6B96-4B22-9672-9507763E632D}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{5D850E2F-6B96-4B22-9672-9507763E632D}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{5D850E2F-6B96-4B22-9672-9507763E632D}.Release|x86.ActiveCfg = Release|Any CPU
+		{870ECF11-0379-441D-9359-B95B78598195}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{870ECF11-0379-441D-9359-B95B78598195}.Debug|Mixed Platforms.ActiveCfg = Debug|x86
+		{870ECF11-0379-441D-9359-B95B78598195}.Debug|Mixed Platforms.Build.0 = Debug|x86
+		{870ECF11-0379-441D-9359-B95B78598195}.Debug|x86.ActiveCfg = Debug|x86
+		{870ECF11-0379-441D-9359-B95B78598195}.Debug|x86.Build.0 = Debug|x86
+		{870ECF11-0379-441D-9359-B95B78598195}.Release|Any CPU.ActiveCfg = Release|x86
+		{870ECF11-0379-441D-9359-B95B78598195}.Release|Mixed Platforms.ActiveCfg = Release|x86
+		{870ECF11-0379-441D-9359-B95B78598195}.Release|Mixed Platforms.Build.0 = Release|x86
+		{870ECF11-0379-441D-9359-B95B78598195}.Release|x86.ActiveCfg = Release|x86
+		{870ECF11-0379-441D-9359-B95B78598195}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
