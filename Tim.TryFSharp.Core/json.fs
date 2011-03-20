@@ -2,6 +2,8 @@
 
 open System
 open System.Globalization
+open System.IO
+open System.Text
 open Microsoft.FSharp.Reflection
 open Newtonsoft.Json
 open Newtonsoft.Json.Linq
@@ -46,7 +48,7 @@ module Json =
                             let name =
                                 match field.GetCustomAttributes(typeof<JsonNameAttribute>, true) with
                                 | [| :? JsonNameAttribute as attrib |] -> attrib.Name
-                                | _ -> field.Name
+                                | _ -> field.Name.Substring(0, 1).ToLowerInvariant() + field.Name.Substring(1)
 
                             let reader, writer = Serializer.Create field.PropertyType
                             name, reader, writer
@@ -206,3 +208,16 @@ module Json =
         fun jsonWriter doc ->
             let token = writer doc
             serializer.Serialize(jsonWriter, token)
+
+    let parseString (s : string) : 'a =
+        use sr = new StringReader(s)
+        use jr = new JsonTextReader(sr)
+        parse jr
+
+    let writeString (value : 'a) : string =
+        let sb = StringBuilder()
+        using (new StringWriter(sb)) <| fun sw ->
+            use jw = new JsonTextWriter(sw)
+            write jw value
+
+        string sb
