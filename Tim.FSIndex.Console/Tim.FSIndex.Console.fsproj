@@ -25,6 +25,7 @@
     <PlatformTarget>x86</PlatformTarget>
     <DocumentationFile>
     </DocumentationFile>
+    <StartArguments>..\..\packages\FSharp.4.0\FSharp.Core.dll</StartArguments>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
     <DebugType>pdbonly</DebugType>

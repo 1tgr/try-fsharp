@@ -55,17 +55,20 @@ module Json =
                     |]
 
                 let reader (raw : JToken) : obj =
-                    let dict : JObject = unbox raw
-                    let values =
-                        [|
-                            for name, reader, _ in serializers ->
-                                try
-                                    reader (dict.[name])
-                                with ex ->
-                                    raise (InvalidOperationException(sprintf "%s: %s" name ex.Message, ex))
-                        |]
+                    match raw with
+                    | null -> failwith "Expected object, not null"
+                    | :? JObject as dict ->
+                        let values =
+                            [|
+                                for name, reader, _ in serializers ->
+                                    try
+                                        reader (dict.[name])
+                                    with ex ->
+                                        raise (InvalidOperationException(sprintf "%s: %s" name ex.Message, ex))
+                            |]
 
-                    make values
+                        make values
+                    | token -> failwithf "Expected object, not %O" token
 
                 let writer (record : obj) : JToken =
                     let dict = JObject()
