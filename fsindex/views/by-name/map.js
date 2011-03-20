@@ -3,22 +3,22 @@ function(doc) {
 
     if (doc.type === "type") {
         typeKey = { _rev: doc._rev, namespace: doc.namespace, name: doc.name };
-        emit([doc.name, "type"], typeKey);
+        emit(doc.name, typeKey);
 
         for (i in doc.methods) {
-            emit([doc.methods[i].name, "method"], typeKey);
+            emit(doc.methods[i].name, typeKey);
         }
         
         for (i in doc.properties) {
-            emit([doc.properties[i].name, "property"], typeKey);
+            emit(doc.properties[i].name, typeKey);
         }
     
         for (i in doc.events) {
-            emit([doc.events[i].name, "event"], typeKey);
+            emit(doc.events[i].name, typeKey);
         }
 
         for (i in doc.fields) {
-            emit([doc.fields[i].name, "field"], typeKey);
+            emit(doc.fields[i].name, typeKey);
         }
     }
 }

@@ -5,36 +5,33 @@
         <script src="/_utils/script/jquery.js"></script> 
         <script src="/_utils/script/jquery.couch.js"></script> 
         <script src="jquery.livesearch.js"></script>
+        <script src="mustache.js"></script>
 
         <script>
 $(function() {
     var db = $.couch.db("fsindex");
 
-    $("#search").livesearch({
-        minimumSearchLength: 1,
-        searchCallback: function(term) {
-            db.view(
-                "app/by-name",
-                {
-                    startkey: [term, ""],
-                    endkey: [term + "\ufff0", "\ufff0"],
-                    success: function(results) {
-                        var i, table = $("<table></table>");
-                        for (i in results.rows) {
-                            var tr = $("<tr><th></th><td></td></tr>");
-                            var key = results.rows[i].key;
-                            var value = results.rows[i].value;
-                            tr.find("th").text(key[0]);
-                            tr.find("td").text(value.namespace + "." + value.name);
-                            table.append(tr);
-                        }
-
-                        $("#results").children("table").remove();
-                        $("#results").append(table);
+    db.openDoc(
+        "_design/app",
+        {
+            success: function(ddoc) {
+                $("#search").livesearch({
+                    minimumSearchLength: 1,
+                    searchCallback: function(term) {
+                        db.view(
+                            "app/by-name",
+                            {
+                                startkey: term,
+                                endkey: term + "\ufff0",
+                                success: function(results) {
+                                    var s = Mustache.to_html(ddoc.templates["search-results"], results);
+                                    $("#results").html(s);
+                                }
+                            });
                     }
                 });
-        }
-    });
+            }
+       });
 });
         </script>
     </head>
