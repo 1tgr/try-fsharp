@@ -23,6 +23,7 @@ $(function() {
                             {
                                 startkey: term,
                                 endkey: term + "\ufff0",
+                                limit: 100,
                                 success: function(results) {
                                     var s = Mustache.to_html(ddoc.templates["search-results"], results);
                                     $("#results").html(s);
