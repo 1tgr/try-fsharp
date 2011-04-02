@@ -14,12 +14,71 @@ type AssemblyName =
         PublicKeyToken : string
     }
 
-type TypeName =
+type DefTypeName =
     {
-        Assembly : AssemblyName option
-        Namespace : string option
+        Assembly : AssemblyName
+        Namespace : string
         Name : string
     }
+
+type GenericTypeName =
+    {
+        Name : string
+    }
+
+type KeywordTypeName =
+    {
+        Name : string
+    }
+
+type ArrayTypeName =
+    {
+        Element : TypeName
+    }
+
+and ByRefTypeName =
+    {
+        Element : TypeName
+    }
+
+and FuncTypeName =
+    {
+        Prototype: TypeName array
+    }
+
+and GenericAppTypeName =
+    {
+        TyCon : TypeName
+        Args : TypeName array
+    }
+
+and TupleTypeName =
+    {
+        Args : TypeName array
+    }
+
+and TypeName =
+    {
+        Array : ArrayTypeName option
+        ByRef : ByRefTypeName option
+        Def : DefTypeName option
+        Func : FuncTypeName option
+        GenericApp : GenericAppTypeName option
+        Generic : GenericTypeName option
+        Keyword : KeywordTypeName option
+        Tuple : TupleTypeName option
+    }
+    static member Empty : TypeName =
+        {
+            Array = None
+            ByRef = None
+            Def = None
+            Func = None
+            GenericApp = None
+            Generic = None
+            Keyword = None
+            Tuple = None
+        }
 
 type Method =
     {
@@ -77,6 +136,15 @@ module Program =
             PublicKeyToken = hex (assemblyName.GetPublicKeyToken())
         }
 
+    let sysTypeName (typ : System.Type) : TypeName =
+        { TypeName.Empty with
+            Def = Some {
+                Assembly = sysAssemblyName typ.Assembly
+                Namespace = typ.Namespace
+                Name = typ.Name
+            }
+        }
+
     let typeId (assembly : AssemblyName) (nspace : string) (name : string) : string =
         [| assembly.Name; assembly.Version; assembly.PublicKeyToken; nspace; name |]
         |> String.concat ","
@@ -110,50 +178,108 @@ module Program =
 
         defaultArg name mem.Name
 
+    let mapFold (fn : 'a -> 'b -> 'a * 'c) (state : 'a) (bs : seq<'b>) : 'a * 'c array =
+        let state, cs =
+            ((state, []), bs)
+            ||> Seq.fold (fun (state, cs) a ->
+                let state, c = fn state a
+                state, c :: cs)
+
+        let cs = Array.ofList (List.rev cs)
+        state, cs
+
     let rec typeRefName (g : int) (typeRef : TypeReference) : int * TypeName =
         match typeRef with
         | :? ArrayType as at ->
-            let g, elementType = typeRefName g at.ElementType
-            g, {
-                TypeName.Assembly = None
-                Namespace = None
-                Name = elementType.Name + " array"
-            }
+            let g, element = typeRefName g at.ElementType
+            g, { TypeName.Empty with
+                    Array = Some {
+                        Element = element
+                    }
+                }
 
         | :? ByReferenceType as brt ->
-            let g, elementType = typeRefName g brt.ElementType
-            g, {
-                TypeName.Assembly = None
-                Namespace = None
-                Name = sprintf "byref<%s>" elementType.Name
-            }
+            let g, element = typeRefName g brt.ElementType
+            g, { TypeName.Empty with
+                    ByRef = Some {
+                        Element = element
+                    }
+                }
+
+        | :? GenericInstanceType as git ->
+            let g, args = mapFold typeRefName g git.GenericArguments
+            if git.ElementType.Name.StartsWith("FSharpFunc`") then
+                g, { TypeName.Empty with
+                        Func = Some {
+                            Prototype = args
+                        }
+                    }
+            else if git.ElementType.Name.StartsWith("Tuple`") then
+                g, { TypeName.Empty with
+                        Tuple = Some {
+                            Args = args
+                        }
+                    }
+            else
+                let g, tyCon = typeRefName g git.ElementType
+                g, { TypeName.Empty with
+                        GenericApp = Some {
+                            TyCon = tyCon
+                            Args = args
+                        }
+                    }
 
         | :? GenericParameter as gp ->
-            g + 1, {
-                TypeName.Assembly = None
-                Namespace = None
-                Name = sprintf "'%c" (char ((int 'a') + g))
-            }
+            g + 1, { TypeName.Empty with
+                        Generic = Some {
+                            Name = sprintf "'%c" (char ((int 'a') + g))
+                    }
+                }
 
         | _ ->
             let typ = resolve typeRef
-            g, {
-                TypeName.Assembly = Some (assemblyName typ.Module.Assembly)
-                Namespace = Some typ.Namespace
-                Name = decodeName typ
-            }
+            let keyword =
+                match typ.FullName with
+                | "Microsoft.FSharp.Collections.FSharpList`1" -> Some "list"
+                | "Microsoft.FSharp.Collections.FSharpMap`2" -> Some "Map"
+                | "Microsoft.FSharp.Collections.FSharpSet`1" -> Some "Set"
+                | "Microsoft.FSharp.Control.FSharpAsync`1" -> Some "async"
+                | "Microsoft.FSharp.Core.FSharpOption`1" -> Some "option"
+                | "Microsoft.FSharp.Core.FSharpRef`1" -> Some "ref"
+                | "Microsoft.FSharp.Core.Unit" -> Some "unit"
+                | "System.Boolean" -> Some "bool"
+                | "System.Int32" -> Some "int"
+                | "System.String" -> Some "string"
+                | "System.Void" -> Some "unit"
+                | "System.Collections.Generic.IEnumerable`1" -> Some "seq"
+                | _ -> None
+
+            match keyword with
+            | Some keyword ->
+                g, { TypeName.Empty with
+                        Keyword = Some {
+                            Name = keyword
+                        }
+                    }
+            | _ ->
+                let name = decodeName typ
+
+                let name =
+                    match name.IndexOf("`") with
+                    | n when n >= 0 -> name.Substring(0, n)
+                    | _ -> name
+
+                g, { TypeName.Empty with
+                        Def = Some {
+                            Assembly = assemblyName typ.Module.Assembly
+                            Namespace = typ.Namespace
+                            Name = name
+                        }
+                    }
 
     let prototype (typeRefs : TypeReference array) : TypeName array =
-        let _, typeNames =
-            let folder (g, typeNames) typeRef =
-                let g, typeName = typeRefName g typeRef
-                g, typeName :: typeNames
-
-            Array.fold folder (0, []) typeRefs
-
+        let _, typeNames = mapFold typeRefName 0 typeRefs
         typeNames
-        |> List.rev
-        |> Array.ofList
 
     let methd (methd : MethodDefinition) : Method =
         let prototype =
@@ -166,15 +292,7 @@ module Program =
 
         let prototype =
             if methd.Parameters.Count = 0 then
-                let unit = typeof<unit>
-                let unit : TypeName =
-                    {
-                        Assembly = Some (sysAssemblyName unit.Assembly)
-                        Namespace = Some unit.Namespace
-                        Name = unit.Name
-                    }
-
-                Array.append [| unit |] prototype
+                Array.append [| { TypeName.Empty with Keyword = Some { Name = "unit" } } |] prototype
             else
                 prototype
 
