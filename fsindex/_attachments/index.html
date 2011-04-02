@@ -8,6 +8,103 @@
         <script src="mustache.js"></script>
 
         <script>
+function words(s) {
+    var i, word = "", ret = [];
+    var isSymbol, symbols = ":'";
+
+    for (i = 0; i < s.length; i++) {
+        isSymbol = symbols.indexOf(s[i]) > -1;
+        if (s[i] == " " || isSymbol) {
+            if (word.length > 0) {
+                ret.push(word);
+            }
+
+            if (isSymbol) {
+                word = s[i];
+            } else {
+                word = "";
+            }
+        } else {
+            word += s[i];
+        }
+    }
+
+    if (word.length > 0) {
+        ret.push(word);
+    }
+
+    return ret;
+}
+
+function parse(term) {
+    var i, w = words(term);
+    var state = 0;
+    var info = { };
+
+    for (i = 0; i < w.length; i++) {
+        switch (state) {
+        case 0: // expecting name or ':'
+            switch (w[i]) {
+            case ":":
+                info.prototype = [];
+                state = 2;
+                break;
+
+            default:
+                info.name = w[i];
+                state = 1;
+                break;
+            }
+            break;
+
+        case 1: // expecting ':' or '->'
+            if (w[i] === ":") {
+                info.prototype = [];
+                state = 2;
+            } else if (w[i] === "->") {
+                info.prototype = [ info.name ];
+                delete info.name;
+                state = 2;
+            } else {
+                throw "expecting ':' or '->'";
+            }
+            break;
+
+        case 2: // expecting type
+            if (w[i] === "->") {
+                throw "expecting type";
+            } else {
+                info.prototype.push(w[i]);
+                state = 3;
+            }
+            break;
+
+        case 3: // expecting ->
+            if (w[i] === "->") {
+                state = 2;
+                break;
+            }
+            break;
+        }
+    }
+   
+    return info;
+}
+
+function formatSignature(prototype) {
+    var i, a = [];
+
+    for (i = 0; i < prototype.length; i++) {
+        if (typeof prototype[i] === "string") {
+            a.push(prototype[i]);
+        } else {
+            a.push(JSON.stringify(prototype[i]));
+        }
+    }
+
+    return a.join(" -> ");
+}
+
 $(function() {
     var db = $.couch.db("fsindex");
 
@@ -18,17 +115,58 @@ $(function() {
                 $("#search").livesearch({
                     minimumSearchLength: 1,
                     searchCallback: function(term) {
-                        db.view(
-                            "app/by-name",
-                            {
-                                startkey: term,
-                                endkey: term + "\ufff0",
-                                limit: 100,
-                                success: function(results) {
-                                    var s = Mustache.to_html(ddoc.templates["search-results"], results);
-                                    $("#results").html(s);
+                       var view, options = {}, format;
+
+                        try {
+                            var info = parse(term);
+
+                            if (info.name && info.prototype) {
+                                throw "can't search by name and prototype yet";
+                            } else if (info.name) {
+                                view = "app/by-name";
+
+                                format = function(rows) {
+                                    return { byName: rows };
                                 }
-                            });
+
+                                options.startkey = info.name;
+                                options.endkey = info.name + "\ufff0";
+                            } else {
+                                view = "app/by-signature";
+
+                                format = function(rows) {
+                                    var i;
+
+                                    for (i = 0; i < rows.length; i++) {
+                                        rows[i].signature = formatSignature(rows[i].key);
+                                    }
+
+                                    return { bySignature: rows };
+                                }
+                                
+                                template = "bySignature";
+                                if (info.prototype.length > 0 && info.prototype[info.prototype.length - 1] === "_") {
+                                    info.prototype.pop();
+                                    options.startkey = info.prototype.concat("");
+                                    options.endkey = info.prototype.concat("\ufff0");
+                                } else {
+                                    options.key = info.prototype;
+                                }
+                            }
+                        } catch (s) {
+                            alert(s);
+                            return;
+                        }
+
+                        options.limit = 100;
+                        options.success = function(results) {
+                            var data = { };
+                            data.rows = format(results.rows);
+                            var s = Mustache.to_html(ddoc.templates["search-results"], data);
+                            $("#results").html(s);
+                        }
+                           
+                        db.view(view, options);
                     }
                 });
             }
