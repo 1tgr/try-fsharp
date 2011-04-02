@@ -1,5 +1,19 @@
+{{^rows}}
+<p>No results.</p>
+{{/rows}}
 <table>
 {{#rows}}
-<tr><td>{{#value}}{{name}}.{{/value}}<strong>{{key}}</strong></td><td>{{#value}}{{namespace}}{{/value}}</td></tr>
+    {{#byName}}
+    <tr>
+        <td>{{#value}}{{name}}.{{/value}}<strong>{{key}}</strong></td>
+        <td>{{#value}}{{namespace}}{{/value}}</td>
+    </tr>
+    {{/byName}}
+    {{#bySignature}}
+    <tr>
+        <td>{{#value}}{{#type}}{{name}}{{/type}}.{{name}} ({{#type}}{{namespace}}{{/type}}){{/value}}</td>
+        <td><strong>{{signature}}</strong></td>
+    </tr>
+    {{/bySignature}}
 {{/rows}}
 </table>
