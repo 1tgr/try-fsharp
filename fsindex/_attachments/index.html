@@ -40,8 +40,13 @@ function parse(term) {
     var i, w = words(term);
     var state = 0;
     var info = { };
+    var error = null;
 
     for (i = 0; i < w.length; i++) {
+        if (error) {
+            throw error;
+        }
+
         switch (state) {
         case 0: // expecting name or ':'
             switch (w[i]) {
@@ -66,13 +71,13 @@ function parse(term) {
                 delete info.name;
                 state = 2;
             } else {
-                throw "expecting ':' or '->'";
+                error = "expecting ':' or '->'";
             }
             break;
 
         case 2: // expecting type
             if (w[i] === "->") {
-                throw "expecting type";
+                error = "expecting type";
             } else {
                 info.prototype.push(w[i]);
                 state = 3;
@@ -82,13 +87,73 @@ function parse(term) {
         case 3: // expecting ->
             if (w[i] === "->") {
                 state = 2;
-                break;
+            } else {
+                error = "expecting ->";
             }
             break;
         }
     }
    
     return info;
+}
+
+function makeQuery(info) {
+    if (info.name && info.prototype) {
+        throw "can't search by name and prototype yet";
+    } else if (info.name) {
+        return {
+            view: "app/by-name",
+
+            format: function(rows) {
+                return { byName: rows };
+            },
+
+            options: {
+                startkey: info.name,
+                endkey: info.name + "\ufff0"
+            }
+        };
+    } else if (info.prototype) {
+        var options;
+        if (info.prototype.length > 0) {
+            var last = info.prototype[info.prototype.length - 1];
+            info.prototype.pop();
+            if (last === "_") {
+                options = {
+                    startkey: info.prototype.concat(null),
+                    endkey: info.prototype.concat({ "\ufff0": "" })
+                };
+            } else {
+                options = {
+                    startkey: info.prototype.concat(last),
+                    endkey: info.prototype.concat(last + "\ufff0")
+                };
+            }
+        } else {
+            options = {
+                startkey: [ null ],
+                endkey: [ { "\ufff0": "" } ]
+            };
+        }
+
+        return {
+            view: "app/by-signature",
+
+            format: function(rows) {
+                var i;
+
+                for (i = 0; i < rows.length; i++) {
+                    rows[i].signature = formatSignature(rows[i].key);
+                }
+
+                return { bySignature: rows };
+            },
+
+            options: options
+        };
+    } else {
+        return null;
+    }
 }
 
 function formatSignature(prototype) {
@@ -115,58 +180,36 @@ $(function() {
                 $("#search").livesearch({
                     minimumSearchLength: 1,
                     searchCallback: function(term) {
-                       var view, options = {}, format;
+                        var query;
 
-                        try {
+                        // try {
                             var info = parse(term);
+                            query = makeQuery(info);
+                        // } catch (s) {
+                        //    alert(s);
+                        //    return;
+                        //}
 
-                            if (info.name && info.prototype) {
-                                throw "can't search by name and prototype yet";
-                            } else if (info.name) {
-                                view = "app/by-name";
+                        if (query) {
+                            query.options.limit = 100;
+                            query.options.success = function(results) {
+                                var data = { };
 
-                                format = function(rows) {
-                                    return { byName: rows };
-                                }
-
-                                options.startkey = info.name;
-                                options.endkey = info.name + "\ufff0";
-                            } else {
-                                view = "app/by-signature";
-
-                                format = function(rows) {
-                                    var i;
-
-                                    for (i = 0; i < rows.length; i++) {
-                                        rows[i].signature = formatSignature(rows[i].key);
-                                    }
-
-                                    return { bySignature: rows };
-                                }
-                                
-                                template = "bySignature";
-                                if (info.prototype.length > 0 && info.prototype[info.prototype.length - 1] === "_") {
-                                    info.prototype.pop();
-                                    options.startkey = info.prototype.concat("");
-                                    options.endkey = info.prototype.concat("\ufff0");
+                                if (results.rows.length === 0) {
+                                    data.rows = [];
                                 } else {
-                                    options.key = info.prototype;
+                                    data.rows = query.format(results.rows);
                                 }
-                            }
-                        } catch (s) {
-                            alert(s);
-                            return;
-                        }
 
-                        options.limit = 100;
-                        options.success = function(results) {
-                            var data = { };
-                            data.rows = format(results.rows);
-                            var s = Mustache.to_html(ddoc.templates["search-results"], data);
+                                var s = Mustache.to_html(ddoc.templates["search-results"], data);
+                                $("#results").html(s);
+                            }
+                               
+                            db.view(query.view, query.options);
+                        } else {
+                            var s = Mustache.to_html(ddoc.templates["search-results"], { rows: [] });
                             $("#results").html(s);
                         }
-                           
-                        db.view(view, options);
                     }
                 });
             }
