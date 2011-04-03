@@ -248,7 +248,9 @@ module Program =
                 | "Microsoft.FSharp.Core.FSharpRef`1" -> Some "ref"
                 | "Microsoft.FSharp.Core.Unit" -> Some "unit"
                 | "System.Boolean" -> Some "bool"
+                | "System.Char" -> Some "char"
                 | "System.Int32" -> Some "int"
+                | "System.Object" -> Some "obj"
                 | "System.String" -> Some "string"
                 | "System.Void" -> Some "unit"
                 | "System.Collections.Generic.IEnumerable`1" -> Some "seq"
@@ -284,6 +286,9 @@ module Program =
     let methd (methd : MethodDefinition) : Method =
         let prototype =
             prototype [|
+                if not methd.IsStatic then
+                    yield methd.DeclaringType :> TypeReference
+
                 for parm in methd.Parameters do
                     yield parm.ParameterType
 
@@ -291,7 +296,7 @@ module Program =
             |]
 
         let prototype =
-            if methd.Parameters.Count = 0 then
+            if methd.IsStatic && methd.Parameters.Count = 0 then
                 Array.append [| { TypeName.Empty with Keyword = Some { Name = "unit" } } |] prototype
             else
                 prototype
