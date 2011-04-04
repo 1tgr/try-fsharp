@@ -3,7 +3,9 @@ function(doc) {
 
     member = function(m) {
         if (m.prototype) {
-            emit(desugarArray(m.prototype), { name: m.name, type: typeKey });
+            var a = desugarArray(m.prototype);
+            a.reverse();
+            emit(a, { name: m.name, type: typeKey });
         }
     };
 

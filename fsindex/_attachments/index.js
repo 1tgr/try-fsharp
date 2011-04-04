@@ -133,59 +133,85 @@ function makeQuery(info) {
     } else if (info.name) {
         return {
             view: "app/by-name",
-
             format: function(rows) {
                 return { byName: rows };
             },
-
             options: {
                 startkey: info.name,
                 endkey: info.name + "\ufff0"
             }
         };
     } else if (info.prototype) {
-        var options;
-        if (info.prototype.length > 0) {
-            var last = info.prototype.pop();
-            if (last === "_") {
-                options = {
-                    startkey: info.prototype.concat(null),
-                    endkey: info.prototype.concat({ "\ufff0": "" })
-                };
-            } else if (typeof last === "string") {
-                options = {
-                    startkey: info.prototype.concat(last),
-                    endkey: info.prototype.concat(last + "\ufff0")
-                };
-            } else {
-                options = {
-                    key: info.prototype.concat(last)
-                };
-            }
-
-            info.prototype.push(last);
-        } else {
-            options = {
-                startkey: [ null ],
-                endkey: [ { "\ufff0": "" } ]
-            };
-        }
-
-        return {
-            view: "app/by-signature",
-
-            format: function(rows) {
+        var format = function(reverse) {
+            return function(rows) {
                 var i;
 
                 for (i = 0; i < rows.length; i++) {
+                    if (reverse) {
+                        rows[i].key.reverse();
+                    }
+
                     rows[i].signature = formatSignature(rows[i].key);
                 }
 
                 return { bySignature: rows };
-            },
-
-            options: options
+            }
         };
+
+        var a = [ ].concat(info.prototype);
+        if (a.length > 0) {
+            var first = a.shift();
+            if (first === "_") {
+                a.reverse();
+                return {
+                    view: "app/by-signature-reverse",
+                    format: format(true),
+                    options: {
+                        startkey: a.concat(null),
+                        endkey: a.concat({ "\ufff0": "" })
+                    }
+                };
+            } else {
+                a.unshift(first);
+                var last = a.pop();
+                if (last === "_") {
+                    return {
+                        view: "app/by-signature",
+                        format: format(false),
+                        options: {
+                            startkey: a.concat(null),
+                            endkey: a.concat({ "\ufff0": "" })
+                        }
+                    };
+                } else if (typeof last === "string") {
+                    return {
+                        view: "app/by-signature",
+                        format: format(false),
+                        options: {
+                            startkey: a.concat(last),
+                            endkey: a.concat(last + "\ufff0")
+                        }
+                    };
+                } else {
+                    return {
+                        view: "app/by-signature",
+                        format: format(false),
+                        options: {
+                            key: a.concat(last)
+                        }
+                    };
+                }
+            }
+        } else {
+            return {
+                view: "app/by-signature",
+                format: format(false),
+                options: {
+                    startkey: [ null ],
+                    endkey: [ { "\ufff0": "" } ]
+                }
+            };
+        }
     } else {
         return null;
     }
