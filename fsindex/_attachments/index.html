@@ -10,7 +10,7 @@
         <script>
 function words(s) {
     var i, word = "", ret = [];
-    var isSymbol, symbols = ":'";
+    var isSymbol, symbols = ":'()";
 
     for (i = 0; i < s.length; i++) {
         isSymbol = symbols.indexOf(s[i]) > -1;
@@ -49,33 +49,16 @@ function parse(term) {
 
         switch (state) {
         case 0: // expecting name or ':'
-            switch (w[i]) {
-            case ":":
-                info.prototype = [];
-                state = 2;
-                break;
-
-            default:
-                info.name = w[i];
-                state = 1;
-                break;
-            }
-            break;
-
-        case 1: // expecting ':' or '->'
             if (w[i] === ":") {
                 info.prototype = [];
-                state = 2;
-            } else if (w[i] === "->") {
-                info.prototype = [ info.name ];
-                delete info.name;
-                state = 2;
+                state = 1;
             } else {
-                error = "expecting ':' or '->'";
+                info.name = w[i];
+                state = 2;
             }
             break;
 
-        case 2: // expecting type
+        case 1: // expecting type
             if (w[i] === "->") {
                 error = "expecting type";
             } else {
@@ -84,11 +67,29 @@ function parse(term) {
             }
             break;
 
-        case 3: // expecting ->
-            if (w[i] === "->") {
-                state = 2;
+        case 2: // expecting ':' , '->' or post-fix generic type
+            if (w[i] === ":") {
+                info.prototype = [];
+                state = 1;
+                break;
             } else {
-                error = "expecting ->";
+                info.prototype = [ info.name ];
+                delete info.name;
+                // fall through
+            }
+
+        case 3: // expecting '->' or post-fix generic type
+            if (w[i] === "->") {
+                state = 1;
+            } else {
+                state = 3;
+
+                var arg = info.prototype.pop();
+                if (w[i] === "array") {
+                    info.prototype.push({ array: arg });
+                } else {
+                    info.prototype.push({ tyCon: w[i], args: [ arg ] });
+                }
             }
             break;
         }
@@ -116,19 +117,24 @@ function makeQuery(info) {
     } else if (info.prototype) {
         var options;
         if (info.prototype.length > 0) {
-            var last = info.prototype[info.prototype.length - 1];
-            info.prototype.pop();
+            var last = info.prototype.pop();
             if (last === "_") {
                 options = {
                     startkey: info.prototype.concat(null),
                     endkey: info.prototype.concat({ "\ufff0": "" })
                 };
-            } else {
+            } else if (typeof last === "string") {
                 options = {
                     startkey: info.prototype.concat(last),
                     endkey: info.prototype.concat(last + "\ufff0")
                 };
+            } else {
+                options = {
+                    key: info.prototype.concat(last)
+                };
             }
+
+            info.prototype.push(last);
         } else {
             options = {
                 startkey: [ null ],
@@ -156,15 +162,39 @@ function makeQuery(info) {
     }
 }
 
-function formatSignature(prototype) {
-    var i, a = [];
+function formatTypeName(t) {
+    var s, i;
 
-    for (i = 0; i < prototype.length; i++) {
-        if (typeof prototype[i] === "string") {
-            a.push(prototype[i]);
+    if (typeof t === "string") {
+        return t;
+    } else if (t instanceof Array) {
+        return "(" + formatSignature(t) + ")";
+    } else if (t.array) {
+        return formatTypeName(t.array) + " array";
+    } else if (t.tyCon) {
+        if (t.args.length === 1) {
+            return formatTypeName(t.args[0]) + " " + formatTypeName(t.tyCon);
         } else {
-            a.push(JSON.stringify(prototype[i]));
+            for (i = 0; i < t.args.length; i++) {
+                if (s.length > 0) {
+                    s += ", ";
+                }
+
+                s += formatTypeName(t.args[i]);
+            }
+
+            return formatTypeName(t.tyCon) + "<" + s + ">";
         }
+    } else {
+        return JSON.stringify(t);
+    }
+}
+
+function formatSignature(prototype) {
+    var i, a = new Array(prototype.length);
+
+    for (i = 0; i < a.length; i++) {
+        a[i] = formatTypeName(prototype[i]);
     }
 
     return a.join(" -> ");
@@ -190,25 +220,30 @@ $(function() {
                         //    return;
                         //}
 
+                        var showResults = function(rows) {
+                            var data = {
+                                rows: rows,
+                                name: info.name 
+                            };
+
+                            if (info.prototype) {
+                                data.prototype = formatSignature(info.prototype);
+                            }
+
+                            var s = Mustache.to_html(ddoc.templates["search-results"], data);
+                            $("#results").html(s);
+                        }
+
                         if (query) {
                             query.options.limit = 100;
                             query.options.success = function(results) {
-                                var data = { };
-
-                                if (results.rows.length === 0) {
-                                    data.rows = [];
-                                } else {
-                                    data.rows = query.format(results.rows);
-                                }
-
-                                var s = Mustache.to_html(ddoc.templates["search-results"], data);
-                                $("#results").html(s);
+                                var rows = results.rows.length === 0 ? [] : query.format(results.rows);
+                                showResults(rows);
                             }
                                
                             db.view(query.view, query.options);
                         } else {
-                            var s = Mustache.to_html(ddoc.templates["search-results"], { rows: [] });
-                            $("#results").html(s);
+                            showResults([ ]);
                         }
                     }
                 });
