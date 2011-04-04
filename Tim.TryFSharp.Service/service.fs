@@ -93,7 +93,10 @@ module Service =
 
                                     Date =
                                         match select item "pubDate" with
-                                        | Some s -> DateTime.Parse(s, CultureInfo.InvariantCulture)
+                                        | Some s ->
+                                            match DateTime.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.None) with
+                                            | true, dt -> dt
+                                            | false, _ -> DateTime.MinValue
                                         | None -> DateTime.MinValue
 
                                     Author = defaultArg (select item "author") ""
