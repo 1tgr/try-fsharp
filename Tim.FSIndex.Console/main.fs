@@ -157,8 +157,11 @@ module Program =
         | t -> t
 
     let decodeName<'a when 'a :> ICustomAttributeProvider and 'a :> IMemberDefinition> (mem : 'a) : string =
+        let attr (name : string) : CustomAttribute option =
+            mem.CustomAttributes |> Seq.tryFind (fun a -> a.AttributeType.FullName = name)
+
         let name =
-            match mem.CustomAttributes |> Seq.tryFind (fun a -> a.AttributeType.FullName = "Microsoft.FSharp.Core.CompilationRepresentationAttribute") with
+            match attr "Microsoft.FSharp.Core.CompilationRepresentationAttribute" with
             | Some cra ->
                 let flags : CompilationRepresentationFlags = unbox cra.ConstructorArguments.[0].Value
                 match int (flags &&& CompilationRepresentationFlags.ModuleSuffix) with
@@ -169,7 +172,7 @@ module Program =
                 None
 
         let name =
-            match name, mem.CustomAttributes |> Seq.tryFind (fun a -> a.AttributeType.FullName = "Microsoft.FSharp.Core.CompilationSourceNameAttribute") with
+            match name, attr "Microsoft.FSharp.Core.CompilationSourceNameAttribute" with
             | None, Some csna ->
                 Some (unbox csna.ConstructorArguments.[0].Value)
 
@@ -337,7 +340,7 @@ module Program =
             Type = "type"
             Assembly = assemblyName typ.Module.Assembly
             Namespace = typ.Namespace
-            Name = typ.Name
+            Name = decodeName typ
             Methods = methods
             Properties = properties
         }
