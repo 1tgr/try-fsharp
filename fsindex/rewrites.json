@@ -1,0 +1,5 @@
+[
+    { "from": "/fsindex/*",         "to": "../../*" },
+    { "from": "/",                  "to": "index.html" },
+    { "from": "/*",                 "to": "*" }
+]
