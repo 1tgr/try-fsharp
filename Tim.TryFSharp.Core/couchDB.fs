@@ -38,6 +38,18 @@ type SaveResponse =
         [<JsonName("rev")>] Rev : string option
     }
 
+type ViewRow<'Key, 'Value> =
+    {
+        [<JsonName("id")>]    Id : string
+        [<JsonName("key")>]   Key : 'Key
+        [<JsonName("value")>] Value : 'Value
+    }
+
+type ViewResponse<'Key, 'Value> =
+    {
+        [<JsonName("rows")>] Rows : ViewRow<'Key, 'Value> array
+    }
+
 module CouchDB =
     let encodeOptions (options : seq<string * string>) : string =
         (StringBuilder(), options)
@@ -200,3 +212,13 @@ module CouchDB =
         let builder = UriBuilder(Uri(baseUri, id))
         builder.Query <- sprintf "rev=%s" rev
         delete builder.Uri
+
+    let viewByKey (baseUri : Uri) (viewName : string) (key : 'Key) : (string * 'Value) array =
+        match viewName.Split([| '/' |], 2) with
+        | [| ddoc; view |] ->
+            let uri = Uri(baseUri, sprintf "_design/%s/_view/%s" ddoc view) |> appendOptions [| "key", Json.writeString key |]
+            let response : ViewResponse<'Key, 'Value> = get uri
+            [| for row in response.Rows -> row.Id, row.Value |]
+
+        | a ->
+            failwithf "Expected ddoc/view, not %A" a
