@@ -46,6 +46,7 @@
   <ItemGroup>
     <Reference Include="FSharp.Core">
       <HintPath>..\packages\FSharp.4.0\FSharp.Core.dll</HintPath>
+      <Private>True</Private>
     </Reference>
     <Reference Include="Mono.Posix">
       <HintPath>..\packages\Mono.Posix.4.0\Mono.Posix.dll</HintPath>
@@ -53,6 +54,7 @@
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <ProjectReference Include="..\Tim.TryFSharp.Core\Tim.TryFSharp.Core.fsproj">
       <Name>Tim.TryFSharp.Core</Name>

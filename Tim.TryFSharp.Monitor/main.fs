@@ -1,6 +1,7 @@
 ﻿namespace Tim.TryFSharp.Monitor
 
 open System
+open System.Configuration
 open System.IO
 open System.Net
 open System.Reflection
@@ -63,7 +64,10 @@ module Main =
             let baseUri =
                 match args with
                 [| uri |] -> Uri(uri)
-                | _ -> Uri("http://tryfs.net/tryfs/")
+                | _ ->
+                    match ConfigurationManager.AppSettings.["BaseUri"] with
+                    | "" | null -> Uri("http://tryfs.net/tryfs/")
+                    | s -> Uri(s)
 
             use ctrlCHandler =
                 if isMono then
