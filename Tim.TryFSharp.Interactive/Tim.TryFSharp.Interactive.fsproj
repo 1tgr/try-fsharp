@@ -43,7 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Compiler.Interactive.Settings">
-      <HintPath>..\packages\FSharp.4.0\FSharp.Compiler.Interactive.Settings.dll</HintPath>
+      <HintPath>..\packages\fsi.4.0\FSharp.Compiler.Interactive.Settings.dll</HintPath>
     </Reference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core">

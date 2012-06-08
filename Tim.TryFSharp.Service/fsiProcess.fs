@@ -16,7 +16,7 @@ type FsiProcessInfo =
     }
 
 type FsiProcess(info : FsiProcessInfo) =
-    let path = sprintf "%s\\%s" (Path.GetTempPath()) info.Name
+    let path = Path.Combine(Path.GetTempPath(), info.Name)
 
     let initTexts =
         let chars = Path.GetInvalidFileNameChars()
@@ -29,22 +29,22 @@ type FsiProcess(info : FsiProcessInfo) =
             Path.ChangeExtension(name, ".fsx"), text |]
 
     let proc =
-        let programFiles =
-            match Environment.GetEnvironmentVariable("ProgramFiles(x86)") with
-            | null -> Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
-            | s -> s
+        let startInfo =
+            new ProcessStartInfo(
+                WorkingDirectory = path,
+                RedirectStandardError = true,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false)
 
-        let filename = Path.Combine(programFiles, "Microsoft F#\\v4.0\\fsi.exe")
+        let fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "fsi.exe")
+        let fileName, arguments =
+            match Type.GetType("Mono.Runtime") with
+            | null -> fileName, ""
+            | _ -> "mono", fileName
 
-        let startInfo = new ProcessStartInfo()
-        startInfo.FileName <-
-            if File.Exists(filename) then
-                filename
-            else
-                "fsi"
-
-        startInfo.Arguments <-
-            (StringBuilder(), initTexts)
+        let arguments =
+            (StringBuilder(arguments), initTexts)
             ||> Array.fold (fun sb (name, _) ->
                 let sb =
                     if sb.Length > 0 then
@@ -56,11 +56,8 @@ type FsiProcess(info : FsiProcessInfo) =
                 sb)
             |> string
 
-        startInfo.WorkingDirectory <- path
-        startInfo.RedirectStandardError <- true
-        startInfo.RedirectStandardInput <- true
-        startInfo.RedirectStandardOutput <- true
-        startInfo.UseShellExecute <- false
+        startInfo.FileName <- fileName
+        startInfo.Arguments <- arguments
 
         let proc = new Process()
         proc.StartInfo <- startInfo
