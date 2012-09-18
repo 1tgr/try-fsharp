@@ -85,12 +85,6 @@
       <Project>{5d850e2f-6b96-4b22-9672-9507763e632d}</Project>
       <Private>True</Private>
     </ProjectReference>
-    <Content Include="..\packages\fsi.4.0\FSharp.Compiler.Interactive.Settings.dll">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="..\packages\fsi.4.0\fsi.exe">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.

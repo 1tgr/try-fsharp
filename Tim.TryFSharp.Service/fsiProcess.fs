@@ -38,6 +38,18 @@ type FsiProcess(info : FsiProcessInfo) =
                 UseShellExecute = false)
 
         let fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "fsi.exe")
+
+        let fileName =
+            if File.Exists(fileName) then
+                fileName
+            else
+                let programFiles =
+                    match Environment.GetEnvironmentVariable("ProgramFiles(x86)") with
+                    | null -> Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+                    | s -> s
+
+                Path.Combine(programFiles, "Microsoft F#\\v4.0\\fsi.exe")
+
         let fileName, arguments =
             match Type.GetType("Mono.Runtime") with
             | null -> fileName, ""
