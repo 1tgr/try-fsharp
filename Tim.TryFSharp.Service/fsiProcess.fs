@@ -52,24 +52,19 @@ type FsiProcess(info : FsiProcessInfo) =
 
         let fileName, arguments =
             match Type.GetType("Mono.Runtime") with
-            | null -> fileName, ""
-            | _ -> "mono", fileName
+            | null -> fileName, [ ]
+            | _ -> "mono", [ fileName ]
 
         let arguments =
-            (StringBuilder(arguments), initTexts)
-            ||> Array.fold (fun sb (name, _) ->
-                let sb =
-                    if sb.Length > 0 then
-                        sb.Append(" ")
-                    else
-                        sb
+            arguments @ [
+                yield "-I:c:\\tryfs\\assemblies"
 
-                Printf.bprintf sb "--use:%s" name
-                sb)
-            |> string
+                for name, _ in initTexts do
+                    yield sprintf "--use:%s" name
+            ]
 
         startInfo.FileName <- fileName
-        startInfo.Arguments <- arguments
+        startInfo.Arguments <- String.concat " " arguments
 
         let proc = new Process()
         proc.StartInfo <- startInfo
