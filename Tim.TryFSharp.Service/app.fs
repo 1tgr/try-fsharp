@@ -35,6 +35,8 @@ module App =
             FsiPid = None
             InitNames = [| |]
             InitTexts = [| |]
+            Quiet = None
+            NoLogo = None
         }
 
     type Claim =
@@ -59,11 +61,21 @@ module App =
                 | Some rev ->
                     let session = { session with Rev = rev.Rev }
 
+                    let arguments =
+                        [|
+                            if defaultArg session.Quiet false then
+                                yield "--quiet"
+
+                            if defaultArg session.NoLogo false then
+                                yield "--nologo"
+                        |]
+
                     try
                         let info : FsiProcessInfo =
                             {
                                 Name = id
                                 InitTexts = Array.zip session.InitNames session.InitTexts
+                                Arguments = arguments
 
                                 Print = fun s ->
                                     let message : Message =

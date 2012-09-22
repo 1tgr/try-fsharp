@@ -14,6 +14,8 @@ type Session =
         [<JsonName("fsiPid")>]     FsiPid     : int64 option
         [<JsonName("initNames")>]  InitNames  : string array
         [<JsonName("initTexts")>]  InitTexts  : string array
+        [<JsonName("quiet")>]      Quiet      : bool option
+        [<JsonName("nologo")>]     NoLogo     : bool option
     }
 
 type Message =

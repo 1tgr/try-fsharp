@@ -11,6 +11,7 @@ type FsiProcessInfo =
     {
         Name : string
         InitTexts : (string * string) array
+        Arguments : string array
         Print : string -> unit
         Recycle : unit -> unit
     }
@@ -58,6 +59,7 @@ type FsiProcess(info : FsiProcessInfo) =
         let arguments =
             arguments @ [
                 yield "-I:c:\\tryfs\\assemblies"
+                yield! info.Arguments
 
                 for name, _ in initTexts do
                     yield sprintf "--use:%s" name
