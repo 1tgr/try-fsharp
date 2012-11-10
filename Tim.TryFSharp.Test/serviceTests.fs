@@ -15,8 +15,18 @@ type ServiceTests() =
 
     [<Fact>]
     let ``Should interact with fsi`` () =
+        let message = "hello world"
         let lines = ResizeArray()
-        using (new FsiProcess({ Name = Path.GetRandomFileName(); InitTexts = [| |]; Arguments = [| |]; Print = lines.Add; Recycle = id })) <| fun fsi ->
-            fsi.Process.StandardInput.WriteLine("printfn \"hello world\";;")
+        use gotMessage = new ManualResetEvent(false)
 
-        Assert.Contains("hello world", lines)
+        let print s =
+            lines.Add(s)
+            if s = message then
+                ignore (gotMessage.Set())
+
+        let success =
+            using (new FsiProcess({ Name = Path.GetRandomFileName(); InitTexts = [| |]; Arguments = [| |]; Print = print; Recycle = id })) <| fun fsi ->
+                fsi.Process.StandardInput.WriteLine("printfn \"{0}\";;", message)
+                gotMessage.WaitOne(TimeSpan.FromSeconds(30.0))
+
+        Assert.True(success, sprintf "Should have '%s' in: %A" message (lines.ToArray()))
