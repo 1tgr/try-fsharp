@@ -55,8 +55,15 @@ module App =
             | s ->
                 let session =
                     match s with
-                    | Some session -> session
-                    | None -> { emptySession with Owner = Some app.OwnServerId }
+                    | Some session ->
+                        { session with
+                            Host = emptySession.Host
+                            ServicePid = emptySession.ServicePid
+                        }
+
+                    | None -> emptySession
+                    
+                let session = { session with Owner = Some app.OwnServerId }
 
                 match TryFSharpDB.safePutSession app.BaseUri id session with
                 | Some rev ->
