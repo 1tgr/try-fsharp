@@ -58,7 +58,7 @@ type FsiProcess(info : FsiProcessInfo) =
 
         let arguments =
             arguments @ [
-                yield "-I:c:\\tryfs\\assemblies"
+                yield sprintf "-I:%s" (Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assemblies"))
                 yield! info.Arguments
 
                 for name, _ in initTexts do

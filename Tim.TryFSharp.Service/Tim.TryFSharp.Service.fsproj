@@ -66,30 +66,6 @@
     <Compile Include="app.fs" />
     <Compile Include="service.fs" />
     <None Include="packages.config" />
-    <Content Include="..\packages\fsi.4.0\FSharp.Compiler.Interactive.Settings.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>FSharp.Compiler.Interactive.Settings.dll</Link>
-    </Content>
-    <Content Include="..\packages\fsi.4.0\fsi.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <Link>fsi.exe</Link>
-    </Content>
-    <None Include="..\packages\FSharp.4.0\FSharp.Core.optdata">
-      <Link>FSharp.Core.optdata</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\packages\FSharp.4.0\FSharp.Core.sigdata">
-      <Link>FSharp.Core.sigdata</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\packages\fsi.4.0\Fsi.exe.config">
-      <Link>Fsi.exe.config</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="..\packages\fsi.4.0\FSharp.Compiler.dll">
-      <Link>FSharp.Compiler.dll</Link>
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
@@ -114,7 +90,23 @@
 	     Other similar extension points exist, see Microsoft.Common.targets.
 	<Target Name="BeforeBuild">
 	</Target>
-	<Target Name="AfterBuild">
-	</Target>
 	-->
+
+  <ItemGroup>
+    <Copy Include="..\packages\fsi.4.0\*"/>
+    <Copy Include="..\packages\FSharp.4.0\FSharp.Core.optdata"/>
+    <Copy Include="..\packages\FSharp.4.0\FSharp.Core.sigdata"/>
+    <Copy Include="..\packages\Newtonsoft.Json.4.0.1\lib\40\Newtonsoft.Json.dll">
+      <Subdir>assemblies</Subdir>
+    </Copy>
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutDir Condition="$(OutDir) == ''">$(OutputPath)</OutDir>
+  </PropertyGroup>
+
+  <Target Name="AfterBuild">
+    <MakeDir Directories="%(Copy.Subdir)"/>
+    <Copy SourceFiles="@(Copy)" DestinationFolder="$(OutDir)\%(Copy.Subdir)"/>
+  </Target>
 </Project>

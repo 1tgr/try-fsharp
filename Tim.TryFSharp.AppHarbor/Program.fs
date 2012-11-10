@@ -12,7 +12,7 @@ module Program =
     let main _ =
         let config : ServiceConfig =
             match ConfigurationManager.AppSettings.["database"] with
-            | null | "" -> failwith "Missing 'database' config setting. Got: %A" [| for k in ConfigurationManager.AppSettings.Keys -> k |]
+            | null | "" -> failwithf "Missing 'database' config setting. Got: %A" [| for k in ConfigurationManager.AppSettings.Keys -> k |]
             | s -> { BaseUri = Uri(s) }
 
         use state = ServiceState.Create(config)
