@@ -66,6 +66,30 @@
     <Compile Include="app.fs" />
     <Compile Include="service.fs" />
     <None Include="packages.config" />
+    <Content Include="..\packages\fsi.4.0\FSharp.Compiler.Interactive.Settings.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>FSharp.Compiler.Interactive.Settings.dll</Link>
+    </Content>
+    <Content Include="..\packages\fsi.4.0\fsi.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>fsi.exe</Link>
+    </Content>
+    <None Include="..\packages\FSharp.4.0\FSharp.Core.optdata">
+      <Link>FSharp.Core.optdata</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\packages\FSharp.4.0\FSharp.Core.sigdata">
+      <Link>FSharp.Core.sigdata</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\packages\fsi.4.0\Fsi.exe.config">
+      <Link>Fsi.exe.config</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\packages\fsi.4.0\FSharp.Compiler.dll">
+      <Link>FSharp.Compiler.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />

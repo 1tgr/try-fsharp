@@ -1,11 +1,11 @@
+*.ncrunchsolution
 *.orig
 *.sln.cache
 *.suo
 *.swp
 *.user
-bin/
 .couchapprc
-deploy/_attachments
+bin/
 deploy-debug/_attachments
+deploy/_attachments
 obj/
-

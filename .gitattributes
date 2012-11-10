@@ -1,0 +1,6 @@
+* text=auto
+*.fs text
+*.sln text eol=crlf
+*.fsproj text eol=crlf
+*.dll binary
+*.exe binary
