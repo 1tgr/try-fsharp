@@ -53,6 +53,13 @@
       <Private>True</Private>
     </Reference>
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Tim.TryFSharp.Service\Tim.TryFSharp.Service.fsproj">
+      <Name>Tim.TryFSharp.Service</Name>
+      <Project>{6fe751ea-3126-4a75-bc77-daf43aa8274f}</Project>
+      <Private>True</Private>
+    </ProjectReference>
+  </ItemGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
 	     Other similar extension points exist, see Microsoft.Common.targets.
 	<Target Name="BeforeBuild">
