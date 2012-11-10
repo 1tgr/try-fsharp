@@ -21,7 +21,7 @@ type ServiceTests() =
 
         let print s =
             lines.Add(s)
-            if s = message then
+            if (s : string).Contains(message) then
                 ignore (gotMessage.Set())
 
         let success =
