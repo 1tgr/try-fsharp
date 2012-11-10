@@ -2,7 +2,7 @@
 
 open Xunit
 
-module ServiceTests =
+type ServiceTests() =
 
     [<Fact>]
     let dummy () =
