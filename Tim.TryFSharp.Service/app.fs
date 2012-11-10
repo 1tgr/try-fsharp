@@ -37,6 +37,7 @@ module App =
             InitTexts = [| |]
             Quiet = None
             NoLogo = None
+            Started = None
         }
 
     type Claim =
@@ -94,7 +95,12 @@ module App =
                             }
 
                         let proc = new FsiProcess(info)
-                        let session = { session with FsiPid = Some (int64 proc.Process.Id) }
+                        let session =
+                            { session with
+                                FsiPid = Some (int64 proc.Process.Id)
+                                Started = Some DateTime.Now
+                            }
+
                         let rev = TryFSharpDB.putSession app.BaseUri id session
                         { app with OwnSessions = Map.add id (Option.get rev.Rev, proc) app.OwnSessions }, OwnSession proc
                     with ex ->

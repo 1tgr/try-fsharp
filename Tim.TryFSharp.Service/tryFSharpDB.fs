@@ -16,6 +16,7 @@ type Session =
         [<JsonName("initTexts")>]  InitTexts  : string array
         [<JsonName("quiet")>]      Quiet      : bool option
         [<JsonName("nologo")>]     NoLogo     : bool option
+        [<JsonName("started")>]    Started    : DateTime option
     }
 
 type Message =
