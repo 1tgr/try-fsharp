@@ -9,8 +9,9 @@
     <OutputType>Library</OutputType>
     <RootNamespace>Tim.TryFSharp.Service</RootNamespace>
     <AssemblyName>Tim.TryFSharp.Service</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <Name>Tim.TryFSharp.Service</Name>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <DebugSymbols>true</DebugSymbols>
@@ -57,8 +58,24 @@
     <DocumentationFile />
     <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
-  <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="!Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
-  <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition=" Exists('$(MSBuildBinPath)\Microsoft.Build.Tasks.v4.0.dll')" />
+  <PropertyGroup>
+    <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
+  </PropertyGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets" Condition="Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')" />
+  <Import Project="$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets" Condition="(!Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')) And (Exists('$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets'))" />
+  <Import Project="$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets" Condition="(!Exists('$(MSBuildExtensionsPath32)\..\Microsoft SDKs\F#\3.0\Framework\v4.0\Microsoft.FSharp.Targets')) And (!Exists('$(MSBuildExtensionsPath32)\..\Microsoft F#\v4.0\Microsoft.FSharp.Targets')) And (Exists('$(MSBuildExtensionsPath32)\FSharp\1.0\Microsoft.FSharp.Targets'))" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+	     Other similar extension points exist, see Microsoft.Common.targets.
+	<Target Name="BeforeBuild">
+	</Target>
+	-->
+  <PropertyGroup>
+    <OutDir Condition="$(OutDir) == ''">$(OutputPath)</OutDir>
+  </PropertyGroup>
+  <Target Name="AfterBuild">
+    <MakeDir Directories="%(Copy.Subdir)" />
+    <Copy SourceFiles="@(Copy)" DestinationFolder="$(OutDir)\%(Copy.Subdir)" />
+  </Target>
   <ItemGroup>
     <Compile Include="timer.fs" />
     <Compile Include="fsiProcess.fs" />
@@ -66,11 +83,33 @@
     <Compile Include="app.fs" />
     <Compile Include="service.fs" />
     <None Include="packages.config" />
+    <Copy Include="..\packages\fsi.4.3\FSharp.Compiler.Interactive.Settings.dll">
+      <Link>FSharp.Compiler.Interactive.Settings.dll</Link>
+    </Copy>
+    <Copy Include="..\packages\fsi.4.3\FSharp.Compiler.dll">
+      <Link>FSharp.Compiler.dll</Link>
+    </Copy>
+    <Copy Include="..\packages\fsi.4.3\Fsi.exe.config">
+      <Link>Fsi.exe.config</Link>
+    </Copy>
+    <Copy Include="..\packages\fsi.4.3\fsi.exe">
+      <Link>fsi.exe</Link>
+    </Copy>
+    <Copy Include="..\packages\FSharp.4.3\FSharp.Core.optdata">
+      <Link>FSharp.Core.optdata</Link>
+    </Copy>
+    <Copy Include="..\packages\FSharp.4.3\FSharp.Core.sigdata">
+      <Link>FSharp.Core.sigdata</Link>
+    </Copy>
+    <Copy Include="..\packages\Newtonsoft.Json.4.0.1\lib\40\Newtonsoft.Json.dll">
+      <Subdir>assemblies</Subdir>
+      <Link>Newtonsoft.Json.dll</Link>
+    </Copy>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core">
-      <HintPath>..\packages\FSharp.4.0\FSharp.Core.dll</HintPath>
+      <HintPath>..\packages\FSharp.4.3\FSharp.Core.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json">
@@ -91,22 +130,4 @@
 	<Target Name="BeforeBuild">
 	</Target>
 	-->
-
-  <ItemGroup>
-    <Copy Include="..\packages\fsi.4.0\*"/>
-    <Copy Include="..\packages\FSharp.4.0\FSharp.Core.optdata"/>
-    <Copy Include="..\packages\FSharp.4.0\FSharp.Core.sigdata"/>
-    <Copy Include="..\packages\Newtonsoft.Json.4.0.1\lib\40\Newtonsoft.Json.dll">
-      <Subdir>assemblies</Subdir>
-    </Copy>
-  </ItemGroup>
-
-  <PropertyGroup>
-    <OutDir Condition="$(OutDir) == ''">$(OutputPath)</OutDir>
-  </PropertyGroup>
-
-  <Target Name="AfterBuild">
-    <MakeDir Directories="%(Copy.Subdir)"/>
-    <Copy SourceFiles="@(Copy)" DestinationFolder="$(OutDir)\%(Copy.Subdir)"/>
-  </Target>
 </Project>

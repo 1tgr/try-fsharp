@@ -1,6 +1,6 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tim.TryFSharp.Test", "Tim.TryFSharp.Test\Tim.TryFSharp.Test.fsproj", "{2C8FF113-8B5F-4B4C-9D8B-B0004D62BBC3}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Tim.TryFSharp.Service", "Tim.TryFSharp.Service\Tim.TryFSharp.Service.fsproj", "{6FE751EA-3126-4A75-BC77-DAF43AA8274F}"
