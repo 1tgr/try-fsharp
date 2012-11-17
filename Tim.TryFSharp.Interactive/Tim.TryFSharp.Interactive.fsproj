@@ -48,7 +48,6 @@
   <ItemGroup>
     <Compile Include="Program.fs" />
     <None Include="App.config" />
-    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Tim.TryFSharp.Core\Tim.TryFSharp.Core.fsproj">

@@ -107,6 +107,11 @@
     </Copy>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Tim.TryFSharp.Interactive\Tim.TryFSharp.Interactive.fsproj">
+      <Name>Tim.TryFSharp.Interactive</Name>
+      <Project>{fb2ca886-df2c-4ed1-920f-70136e1cdda4}</Project>
+      <Private>True</Private>
+    </ProjectReference>
     <Reference Include="mscorlib" />
     <Reference Include="FSharp.Core">
       <HintPath>..\packages\FSharp.4.3\FSharp.Core.dll</HintPath>
