@@ -36,6 +36,7 @@ Global
 		{FB2CA886-DF2C-4ED1-920F-70136E1CDDA4}.Debug|x86.ActiveCfg = Debug|Any CPU
 		{FB2CA886-DF2C-4ED1-920F-70136E1CDDA4}.Debug|x86.Build.0 = Debug|Any CPU
 		{FB2CA886-DF2C-4ED1-920F-70136E1CDDA4}.Release|x86.ActiveCfg = Release|Any CPU
+		{FB2CA886-DF2C-4ED1-920F-70136E1CDDA4}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
