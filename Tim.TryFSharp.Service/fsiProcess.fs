@@ -2,9 +2,10 @@
 
 open System
 open System.Diagnostics
+open System.IO
 open System.Text
 open System.Threading
-open System.IO
+open Newtonsoft.Json
 open Tim.TryFSharp.Core
 
 type FsiProcessInfo =
@@ -30,47 +31,21 @@ type FsiProcess(info : FsiProcessInfo) =
             Path.ChangeExtension(name, ".fsx"), text |]
 
     let proc =
-        let startInfo =
-            new ProcessStartInfo(
-                WorkingDirectory = path,
-                RedirectStandardError = true,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                UseShellExecute = false)
-
-        let fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "fsi.exe")
-
-        let fileName =
-            if File.Exists(fileName) then
-                fileName
-            else
-                let programFiles =
-                    match Environment.GetEnvironmentVariable("ProgramFiles(x86)") with
-                    | null -> Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
-                    | s -> s
-
-                Path.Combine(programFiles, "Microsoft F#\\v4.0\\fsi.exe")
+        let fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Tim.TryFSharp.Interactive.exe")
 
         let fileName, arguments =
             match Type.GetType("Mono.Runtime") with
             | null -> fileName, [ ]
             | _ -> "mono", [ fileName ]
 
-        let arguments =
-            arguments @ [
-                yield sprintf "-I:%s" (Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assemblies"))
-                yield! info.Arguments
-
-                for name, _ in initTexts do
-                    yield sprintf "--use:%s" name
-            ]
-
-        startInfo.FileName <- fileName
-        startInfo.Arguments <- String.concat " " arguments
-
-        let proc = new Process()
-        proc.StartInfo <- startInfo
-        proc
+        new Process(
+            StartInfo = ProcessStartInfo(
+                FileName = fileName,
+                WorkingDirectory = path,
+                RedirectStandardError = true,
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false))
 
     let syncRoot = obj()
     let buffer = ResizeArray<string>()
@@ -113,6 +88,25 @@ type FsiProcess(info : FsiProcessInfo) =
             File.WriteAllText(Path.Combine(path, name), text)
 
         ignore (proc.Start())
+
+        let arguments =
+            [|
+                yield sprintf "-I:%s" (Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assemblies"))
+                yield! info.Arguments
+
+                for name, _ in initTexts do
+                    yield sprintf "--use:%s" name
+            |]
+
+        let argumentsJson =
+            let sb = StringBuilder()
+            using (new StringWriter(sb)) <| fun textWriter ->
+                use jsonWriter = new JsonTextWriter(textWriter, Formatting = Formatting.None)
+                JsonSerializer().Serialize(jsonWriter, arguments)
+
+            string (sb.Replace("\r", "").Replace("\n", ""))
+
+        proc.StandardInput.WriteLine(argumentsJson)
         proc.BeginErrorReadLine()
         proc.BeginOutputReadLine()
 
