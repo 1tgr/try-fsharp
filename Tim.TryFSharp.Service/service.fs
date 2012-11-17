@@ -183,6 +183,7 @@ type ServiceState =
                     BaseUri = config.BaseUri
                     OwnSessions = Map.empty
                     SlowStop = false
+                    NextInteractiveProcess = FsiProcess.Start()
                 }
 
             MailboxProcessor.Start(App.run app, cts.Token)

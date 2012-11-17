@@ -17,7 +17,7 @@ type FsiProcessInfo =
         Recycle : unit -> unit
     }
 
-type FsiProcess(info : FsiProcessInfo) =
+type FsiProcess(info : FsiProcessInfo, proc : Process) =
     let path = Path.Combine(Path.GetTempPath(), info.Name)
 
     let initTexts =
@@ -29,23 +29,6 @@ type FsiProcess(info : FsiProcessInfo) =
                 ||> Array.fold (fun name char -> name.Replace(char, '_'))
 
             Path.ChangeExtension(name, ".fsx"), text |]
-
-    let proc =
-        let fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Tim.TryFSharp.Interactive.exe")
-
-        let fileName, arguments =
-            match Type.GetType("Mono.Runtime") with
-            | null -> fileName, [ ]
-            | _ -> "mono", [ fileName ]
-
-        new Process(
-            StartInfo = ProcessStartInfo(
-                FileName = fileName,
-                WorkingDirectory = path,
-                RedirectStandardError = true,
-                RedirectStandardInput = true,
-                RedirectStandardOutput = true,
-                UseShellExecute = false))
 
     let syncRoot = obj()
     let buffer = ResizeArray<string>()
@@ -84,18 +67,16 @@ type FsiProcess(info : FsiProcessInfo) =
         proc.ErrorDataReceived.Add post
 
         ignore (Directory.CreateDirectory path)
-        for name, text in initTexts do
-            File.WriteAllText(Path.Combine(path, name), text)
-
-        ignore (proc.Start())
 
         let arguments =
             [|
                 yield sprintf "-I:%s" (Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assemblies"))
                 yield! info.Arguments
 
-                for name, _ in initTexts do
-                    yield sprintf "--use:%s" name
+                for name, text in initTexts do
+                    let filename = Path.Combine(path, name)
+                    File.WriteAllText(filename, text)
+                    yield sprintf "--use:%s" filename
             |]
 
         let argumentsJson =
@@ -109,6 +90,26 @@ type FsiProcess(info : FsiProcessInfo) =
         proc.StandardInput.WriteLine(argumentsJson)
         proc.BeginErrorReadLine()
         proc.BeginOutputReadLine()
+
+    static member Start() : Process =
+        let fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Tim.TryFSharp.Interactive.exe")
+
+        let fileName, arguments =
+            match Type.GetType("Mono.Runtime") with
+            | null -> fileName, [ ]
+            | _ -> "mono", [ fileName ]
+
+        let proc =
+            new Process(
+                StartInfo = ProcessStartInfo(
+                    FileName = fileName,
+                    RedirectStandardError = true,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false))
+
+        ignore (proc.Start())
+        proc
 
     member this.Process = proc
 

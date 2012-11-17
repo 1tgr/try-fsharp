@@ -10,7 +10,8 @@ type ServiceTests() =
 
     [<Fact>]
     let ``Should start and stop fsi`` () =
-        use proc = new FsiProcess({ Name = Path.GetRandomFileName(); InitTexts = [| |]; Arguments = [| |]; Print = Console.WriteLine; Recycle = id })
+        use proc = FsiProcess.Start()
+        use fsiProc = new FsiProcess({ Name = Path.GetRandomFileName(); InitTexts = [| |]; Arguments = [| |]; Print = Console.WriteLine; Recycle = id }, proc)
         ()
 
     [<Fact>]
@@ -25,8 +26,9 @@ type ServiceTests() =
                 ignore (gotMessage.Set())
 
         let success =
-            using (new FsiProcess({ Name = Path.GetRandomFileName(); InitTexts = [| |]; Arguments = [| |]; Print = print; Recycle = id })) <| fun fsi ->
-                fsi.Process.StandardInput.WriteLine("printfn \"{0}\";;", message)
-                gotMessage.WaitOne(TimeSpan.FromSeconds(30.0))
+            use proc = FsiProcess.Start()
+            use fsiProc = new FsiProcess({ Name = Path.GetRandomFileName(); InitTexts = [| |]; Arguments = [| |]; Print = print; Recycle = id }, proc)
+            fsiProc.Process.StandardInput.WriteLine("printfn \"{0}\";;", message)
+            gotMessage.WaitOne(TimeSpan.FromSeconds(30.0))
 
         Assert.True(success, sprintf "Should have '%s' in: %A" message (lines.ToArray()))

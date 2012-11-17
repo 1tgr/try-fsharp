@@ -14,6 +14,7 @@ type App =
         BaseUri : Uri
         OwnSessions : Map<string, string * FsiProcess>
         SlowStop : bool
+        NextInteractiveProcess : Process
     }
 
 type Command =
@@ -101,7 +102,9 @@ module App =
                                 Recycle = fun () -> inbox.Post (Recycle id)
                             }
 
-                        let proc = new FsiProcess(info)
+                        let proc = new FsiProcess(info, app.NextInteractiveProcess)
+                        let app = { app with NextInteractiveProcess = FsiProcess.Start() }
+
                         let session =
                             { session with
                                 FsiPid = Some (int64 proc.Process.Id)
@@ -109,7 +112,8 @@ module App =
                             }
 
                         let rev = TryFSharpDB.putSession app.BaseUri id session
-                        { app with OwnSessions = Map.add id (Option.get rev.Rev, proc) app.OwnSessions }, OwnSession proc
+                        let app = { app with OwnSessions = Map.add id (Option.get rev.Rev, proc) app.OwnSessions }
+                        app, OwnSession proc
                     with ex ->
                         CouchDB.deleteDocument app.BaseUri id (Option.get rev.Rev)
                         app, ProcessFailed ex
