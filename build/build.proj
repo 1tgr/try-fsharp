@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Deploy" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <DatabaseUrl>http://ec2.partario.com:5984/tryfs/</DatabaseUrl>
+  </PropertyGroup>
+
   <UsingTask AssemblyFile="MSBuild.ExtensionPack.dll" TaskName="RoboCopy" />
   <UsingTask AssemblyFile="MSBuild.ExtensionPack.dll" TaskName="WindowsService" />
+  <UsingTask AssemblyFile="MSBuild.ExtensionPack.dll" TaskName="XmlFile" />
 
   <Target Name="StopService">
     <WindowsService TaskAction="Stop" ServiceName="tryfs" />
@@ -9,6 +14,7 @@
 
   <Target Name="Copy">
     <RoboCopy Source="..\artifacts" Destination="c:\tryfs" Files="*.*" Options="/mir" />
+    <XmlFile TaskAction="UpdateAttribute" File="c:\tryfs\Tim.TryFSharp.AppHarbor.exe.config" XPath="/configuration/appSettings/add[@key='database']/@value" Value="$(DatabaseUrl)" />
   </Target>
 
   <Target Name="StartService">
