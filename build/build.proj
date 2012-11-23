@@ -8,7 +8,7 @@
   </Target>
 
   <Target Name="Copy">
-    <RoboCopy Source="..\artifacts" Destination="c:\tryfs" Options="/mir" />
+    <RoboCopy Source="..\artifacts" Destination="c:\tryfs" Files="*.*" Options="/mir" />
   </Target>
 
   <Target Name="StartService">
