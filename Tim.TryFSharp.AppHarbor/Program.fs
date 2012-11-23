@@ -10,11 +10,21 @@ module Program =
 
     [<EntryPoint>]
     let main _ =
-        let config : ServiceConfig =
-            match ConfigurationManager.AppSettings.["database"] with
-            | null | "" -> failwithf "Missing 'database' config setting. Got: %A" [| for k in ConfigurationManager.AppSettings.Keys -> k |]
-            | s -> { BaseUri = Uri(s) }
+        try
+            use exitEvent = new ManualResetEvent(false)
 
-        use state = ServiceState.Create(config)
-        Thread.Sleep(Timeout.Infinite)
-        0
+            AppDomain.CurrentDomain.UnhandledException.Add <| fun e ->
+                eprintf "%O" e.ExceptionObject
+                ignore (exitEvent.Set())
+
+            let config : ServiceConfig =
+                match ConfigurationManager.AppSettings.["database"] with
+                | null | "" -> failwithf "Missing 'database' config setting. Got: %A" [| for k in ConfigurationManager.AppSettings.Keys -> k |]
+                | s -> { BaseUri = Uri(s) }
+
+            use state = ServiceState.Create(config)
+            ignore (exitEvent.WaitOne())
+        with ex ->
+            eprintfn "%O" ex
+
+        1
