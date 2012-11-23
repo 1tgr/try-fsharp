@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask AssemblyName="MSBuild.ExtensionPack.dll" TaskName="RoboCopy" />
+  <UsingTask AssemblyName="MSBuild.ExtensionPack.dll" TaskName="WindowsService" />
+
+  <Target Name="StopService">
+    <WindowsService TaskAction="Stop" ServiceName="tryfs" />
+  </Target>
+
+  <Target Name="Copy">
+    <RoboCopy Source="..\artifacts" Destination="c:\tryfs" Options="/mir" />
+  </Target>
+
+  <Target Name="StartService">
+    <WindowsService TaskAction="Start" ServiceName="tryfs" />
+  </Target>
+
+  <Target Name="Deploy" DependsOnTargets="StopService;Copy;StartService" />
+</Project>
