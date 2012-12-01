@@ -70,6 +70,7 @@ type FsiProcess(info : FsiProcessInfo, proc : Process) =
 
         let arguments =
             [|
+                yield "--utf8output"
                 yield sprintf "-I:%s" (Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assemblies"))
                 yield! info.Arguments
 
@@ -106,6 +107,8 @@ type FsiProcess(info : FsiProcessInfo, proc : Process) =
                     RedirectStandardError = true,
                     RedirectStandardInput = true,
                     RedirectStandardOutput = true,
+                    StandardErrorEncoding = Encoding.UTF8,
+                    StandardOutputEncoding = Encoding.UTF8,
                     UseShellExecute = false))
 
         ignore (proc.Start())

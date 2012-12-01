@@ -14,9 +14,7 @@ type ServiceTests() =
         use fsiProc = new FsiProcess({ Name = Path.GetRandomFileName(); InitTexts = [| |]; Arguments = [| |]; Print = Console.WriteLine; Recycle = id }, proc)
         ()
 
-    [<Fact>]
-    let ``Should interact with fsi`` () =
-        let message = "hello world"
+    let interact message =
         let lines = ResizeArray()
         use gotMessage = new ManualResetEvent(false)
 
@@ -32,3 +30,11 @@ type ServiceTests() =
             gotMessage.WaitOne(TimeSpan.FromSeconds(30.0))
 
         Assert.True(success, sprintf "Should have '%s' in: %A" message (lines.ToArray()))
+
+    [<Fact>]
+    let ``Should interact with fsi`` () =
+        interact "hello world"
+        
+    [<Fact>]
+    let ``Standard input and output should use UTF-8`` () =
+        interact "“£10”, he said"
