@@ -92,6 +92,8 @@ type FsiProcess(info : FsiProcessInfo, proc : Process) =
         proc.BeginErrorReadLine()
         proc.BeginOutputReadLine()
 
+    let standardInput = new StreamWriter(proc.StandardInput.BaseStream, Encoding.UTF8)
+
     static member Start() : Process =
         let fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Tim.TryFSharp.Interactive.exe")
 
@@ -114,7 +116,8 @@ type FsiProcess(info : FsiProcessInfo, proc : Process) =
         ignore (proc.Start())
         proc
 
-    member this.Process = proc
+    member this.StandardInput = standardInput
+    member this.ProcessId = proc.Id
 
     interface IDisposable with
         member this.Dispose() =

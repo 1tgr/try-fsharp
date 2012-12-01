@@ -107,7 +107,7 @@ module App =
 
                         let session =
                             { session with
-                                FsiPid = Some (int64 proc.Process.Id)
+                                FsiPid = Some (int64 proc.ProcessId)
                                 Started = Some DateTime.Now
                             }
 
@@ -170,7 +170,7 @@ module App =
 
                     let rev = TryFSharpDB.putMessage app.BaseUri id message
                     let message = { message with Rev = rev.Rev }
-                    proc.Process.StandardInput.WriteLine message.Message
+                    proc.StandardInput.WriteLine message.Message
 
                 | ProcessFailed ex ->
                     Log.info "%O" ex

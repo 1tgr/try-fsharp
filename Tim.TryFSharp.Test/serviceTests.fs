@@ -26,7 +26,7 @@ type ServiceTests() =
         let success =
             use proc = FsiProcess.Start()
             use fsiProc = new FsiProcess({ Name = Path.GetRandomFileName(); InitTexts = [| |]; Arguments = [| |]; Print = print; Recycle = id }, proc)
-            fsiProc.Process.StandardInput.WriteLine("printfn \"{0}\";;", message)
+            fsiProc.StandardInput.WriteLine("printfn \"{0}\";;", message)
             gotMessage.WaitOne(TimeSpan.FromSeconds(30.0))
 
         Assert.True(success, sprintf "Should have '%s' in: %A" message (lines.ToArray()))
