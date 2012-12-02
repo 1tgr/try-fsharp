@@ -18,7 +18,7 @@ type FsiProcessInfo =
     }
 
 type FsiProcess(info : FsiProcessInfo, proc : Process) =
-    let standardInput = new StreamWriter(proc.StandardInput.BaseStream, Encoding.UTF8, AutoFlush = true)
+    let standardInput = new StreamWriter(proc.StandardInput.BaseStream, UTF8Encoding(false), AutoFlush = true)
     let path = Path.Combine(Path.GetTempPath(), info.Name)
 
     let initTexts =
