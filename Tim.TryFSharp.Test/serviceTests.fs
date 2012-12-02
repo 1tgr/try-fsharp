@@ -14,7 +14,7 @@ type ServiceTests() =
         use fsiProc = new FsiProcess({ Name = Path.GetRandomFileName(); InitTexts = [| |]; Arguments = [| |]; Print = Console.WriteLine; Recycle = id }, proc)
         ()
 
-    let interact fn substring =
+    let interact substring fn =
         let lines = ResizeArray()
         use gotMessage = new ManualResetEvent(false)
 
@@ -33,8 +33,10 @@ type ServiceTests() =
 
     [<Fact>]
     let ``Should interact with fsi`` () =
-        interact (fun fsiProc -> fprintfn fsiProc.StandardInput "printfn \"hello world\";;") "hello world"
+        interact "hello world" <| fun fsiProc ->
+            fprintfn fsiProc.StandardInput "printfn \"hello world\";;"
         
     [<Fact>]
     let ``Standard input and output should use UTF-8`` () =
-        interact (fun fsiProc -> fprintfn fsiProc.StandardInput "printfn \"\\u201C\\u00A310\\u201D, he said\"") "“£10”, he said"
+        interact "“£10”, he said" <| fun fsiProc ->
+            fprintfn fsiProc.StandardInput "printfn \"\\u201C\\u00A310\\u201D, he said\";;"
