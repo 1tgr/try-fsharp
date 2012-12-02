@@ -18,6 +18,7 @@ type FsiProcessInfo =
     }
 
 type FsiProcess(info : FsiProcessInfo, proc : Process) =
+    let standardInput = new StreamWriter(proc.StandardInput.BaseStream, Encoding.UTF8, AutoFlush = true)
     let path = Path.Combine(Path.GetTempPath(), info.Name)
 
     let initTexts =
@@ -88,11 +89,9 @@ type FsiProcess(info : FsiProcessInfo, proc : Process) =
 
             string (sb.Replace("\r", "").Replace("\n", ""))
 
-        proc.StandardInput.WriteLine(argumentsJson)
+        standardInput.WriteLine(argumentsJson)
         proc.BeginErrorReadLine()
         proc.BeginOutputReadLine()
-
-    let standardInput = new StreamWriter(proc.StandardInput.BaseStream, Encoding.UTF8)
 
     static member Start() : Process =
         let fileName = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Tim.TryFSharp.Interactive.exe")
@@ -122,7 +121,7 @@ type FsiProcess(info : FsiProcessInfo, proc : Process) =
     interface IDisposable with
         member this.Dispose() =
             Log.info "Exiting fsi process %d" proc.Id
-            proc.StandardInput.WriteLine("#quit;;")
+            standardInput.WriteLine("#quit;;")
 
             if not (proc.WaitForExit(5000)) then
                 Log.info "Killing fsi process %d" proc.Id
